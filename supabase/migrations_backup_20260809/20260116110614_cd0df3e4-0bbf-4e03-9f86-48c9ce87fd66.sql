@@ -1,0 +1,62 @@
+-- Seed ICT Lessons - Units 7-10
+INSERT INTO public.lessons (unit_id, lesson_number, title, topic_name, description, xp_reward, quiz_question_count, practice_question_count, video_duration_display, video_duration_seconds)
+VALUES 
+-- Unit 7: Software & Security (15 lessons)
+('b2000000-0000-0000-0000-000000000007', 1, 'Types of Software & Interrupts', 'Software Types', 'System vs application software, interrupt handling', 90, 15, 35, '43:48', 2628),
+('b2000000-0000-0000-0000-000000000007', 2, 'System Software', 'Software Types', 'Operating systems, device drivers', 80, 12, 30, '36:04', 2164),
+('b2000000-0000-0000-0000-000000000007', 3, 'System Software | Utility', 'Software Types', 'Utility programs, defragmentation, antivirus', 80, 12, 30, '34:14', 2054),
+('b2000000-0000-0000-0000-000000000007', 4, 'Operating System | HCI', 'Software Types', 'Human Computer Interface, GUI vs CLI', 75, 12, 25, '32:54', 1974),
+('b2000000-0000-0000-0000-000000000007', 5, 'Operating System Functions', 'Software Types', 'Memory, file, process management', 85, 15, 35, '40:15', 2415),
+('b2000000-0000-0000-0000-000000000007', 6, 'Types of Programming Languages', 'Programming Languages', 'High-level vs low-level languages', 70, 10, 25, '24:33', 1473),
+('b2000000-0000-0000-0000-000000000007', 7, 'Computer Programs | HLL | LLL', 'Programming Languages', 'Assembly, machine code, compilers, interpreters', 85, 15, 35, '39:20', 2360),
+('b2000000-0000-0000-0000-000000000007', 8, 'IDE', 'Programming Languages', 'Integrated Development Environment features', 85, 15, 35, '40:41', 2441),
+('b2000000-0000-0000-0000-000000000007', 9, 'Internet & Its Users', 'Cybersecurity', 'Internet structure, browsers, protocols', 90, 15, 35, '44:56', 2696),
+('b2000000-0000-0000-0000-000000000007', 10, 'Digital Currency | Cryptography', 'Cybersecurity', 'Cryptocurrency basics, encryption methods', 85, 15, 35, '41:47', 2507),
+('b2000000-0000-0000-0000-000000000007', 11, 'Cyber Security', 'Cybersecurity', 'Threats, vulnerabilities, malware types', 95, 15, 40, '46:19', 2779),
+('b2000000-0000-0000-0000-000000000007', 12, 'Cyber Security | Pharming', 'Cybersecurity', 'Phishing, pharming, social engineering', 80, 12, 30, '34:56', 2096),
+('b2000000-0000-0000-0000-000000000007', 13, 'Security Measures', 'Cybersecurity', 'Firewalls, anti-malware software', 90, 15, 35, '44:45', 2685),
+('b2000000-0000-0000-0000-000000000007', 14, 'Two-Step Authentication', 'Cybersecurity', 'Multi-factor authentication, biometrics', 90, 15, 35, '44:00', 2640),
+('b2000000-0000-0000-0000-000000000007', 15, 'Proxy Server', 'Cybersecurity', 'Proxy server functions, anonymity, security', 85, 15, 35, '40:36', 2436),
+
+-- Unit 8: Emerging Technologies (6 lessons)
+('b2000000-0000-0000-0000-000000000008', 1, 'Automated & Emerging Technologies', 'Automated Systems', 'Introduction to automation', 65, 10, 20, '19:12', 1152),
+('b2000000-0000-0000-0000-000000000008', 2, 'Weather Stations', 'Automated Systems', 'Automated data collection, weather monitoring', 65, 10, 20, '19:27', 1167),
+('b2000000-0000-0000-0000-000000000008', 3, 'Robotics', 'Robotics', 'Robot components, control, industrial robotics', 160, 28, 65, '1:18:21', 4701),
+('b2000000-0000-0000-0000-000000000008', 4, 'Robotics | Industry - Agriculture', 'Robotics', 'Manufacturing and agricultural automation', 75, 12, 30, '29:19', 1759),
+('b2000000-0000-0000-0000-000000000008', 5, 'AI | Characteristics', 'Artificial Intelligence', 'AI basics, machine learning, neural networks', 70, 12, 25, '26:14', 1574),
+('b2000000-0000-0000-0000-000000000008', 6, 'AI System', 'Artificial Intelligence', 'Expert systems, NLP, computer vision', 80, 12, 30, '34:53', 2093),
+
+-- Unit 9: Programming & Algorithm Design (29 lessons)
+('b2000000-0000-0000-0000-000000000009', 1, 'Algorithm Design & Problem Solving', 'Algorithm Fundamentals', 'What is an algorithm, design principles', 70, 10, 25, '23:23', 1403),
+('b2000000-0000-0000-0000-000000000009', 2, 'Algorithm Design | Decomposition', 'Algorithm Fundamentals', 'Breaking down problems, top-down design', 75, 12, 30, '31:49', 1909),
+('b2000000-0000-0000-0000-000000000009', 3, 'Programming Introduction', 'Algorithm Fundamentals', 'Programming basics, variables, data types', 60, 10, 20, '17:54', 1074),
+('b2000000-0000-0000-0000-000000000009', 4, 'Programming | Flowchart', 'Algorithm Fundamentals', 'Flowchart symbols, basic structures', 90, 15, 35, '44:17', 2657),
+('b2000000-0000-0000-0000-000000000009', 5, 'Programming Part 2', 'Flowcharts', 'Advanced flowchart concepts', 85, 15, 35, '39:31', 2371),
+('b2000000-0000-0000-0000-000000000009', 6, 'Flowchart | Questions', 'Flowcharts', 'Flowchart practice problems', 105, 18, 40, '50:27', 3027),
+('b2000000-0000-0000-0000-000000000009', 7, 'Flowchart Questions (2)', 'Flowcharts', 'More practice problems', 75, 12, 25, '28:42', 1722),
+('b2000000-0000-0000-0000-000000000009', 8, 'Flowchart | Finding Largest & Smallest', 'Flowcharts', 'Comparison algorithms, min/max', 90, 15, 35, '44:23', 2663),
+('b2000000-0000-0000-0000-000000000009', 9, 'Flowchart | Digit Counting', 'Flowcharts', 'Counter variables, loop structures', 80, 12, 30, '35:33', 2133),
+('b2000000-0000-0000-0000-000000000009', 10, 'Pseudocode | Selection Statements', 'Pseudocode Basics', 'IF...THEN...ELSE, CASE statements', 60, 10, 20, '14:27', 867),
+('b2000000-0000-0000-0000-000000000009', 11, 'Pseudocode | Repetition/Loops', 'Pseudocode Basics', 'FOR, WHILE, REPEAT...UNTIL loops', 100, 18, 40, '48:01', 2881),
+('b2000000-0000-0000-0000-000000000009', 12, 'Pseudocode Basics | Arrays', 'Pseudocode Basics', 'Array declaration, accessing elements', 95, 15, 35, '45:14', 2714),
+('b2000000-0000-0000-0000-000000000009', 13, '1D-Arrays | Linear Search', 'Pseudocode Basics', 'Linear search algorithm, array traversal', 75, 12, 30, '32:59', 1979),
+('b2000000-0000-0000-0000-000000000009', 14, 'Bubble Sorting', 'Pseudocode Basics', 'Bubble sort implementation', 95, 15, 35, '47:22', 2842),
+('b2000000-0000-0000-0000-000000000009', 15, '2D-Arrays', 'Pseudocode Basics', 'Two-dimensional arrays, matrix operations', 80, 12, 30, '36:38', 2198),
+('b2000000-0000-0000-0000-000000000009', 16, '2D-Arrays Part 2', 'Pseudocode Basics', 'Advanced 2D array problems', 105, 18, 40, '51:21', 3081),
+('b2000000-0000-0000-0000-000000000009', 17, 'Pseudocode | Validation Checks', 'Advanced Programming', 'Length, range, type, presence checks', 80, 12, 30, '33:56', 2036),
+('b2000000-0000-0000-0000-000000000009', 18, 'Verification & Test Data', 'Advanced Programming', 'Testing strategies, normal/boundary/erroneous data', 115, 20, 45, '57:19', 3439),
+('b2000000-0000-0000-0000-000000000009', 19, 'Pseudocode Basics | Programming', 'Advanced Programming', 'Complex programming problems', 115, 20, 45, '57:57', 3477),
+('b2000000-0000-0000-0000-000000000009', 20, 'Routines/Built-In Functions', 'Advanced Programming', 'String and mathematical functions', 100, 18, 40, '48:00', 2880),
+('b2000000-0000-0000-0000-000000000009', 21, 'Procedures & Functions Part 1', 'Advanced Programming', 'Defining procedures, parameters, return values', 110, 20, 45, '52:00', 3120),
+('b2000000-0000-0000-0000-000000000009', 22, 'Procedures & Functions Part 2', 'Advanced Programming', 'Advanced procedures, recursion basics', 110, 20, 45, '52:00', 3120),
+('b2000000-0000-0000-0000-000000000009', 23, 'Procedures & Functions Part 3', 'Advanced Programming', 'Complex function problems', 110, 20, 45, '52:00', 3120),
+('b2000000-0000-0000-0000-000000000009', 24, 'File Handling', 'File Operations', 'OPENFILE, READFILE, WRITEFILE, EOF', 105, 18, 40, '50:00', 3000),
+('b2000000-0000-0000-0000-000000000009', 25, 'File Handling | Transferring Data', 'File Operations', 'Reading/writing files, validation during I/O', 100, 18, 40, '48:00', 2880),
+('b2000000-0000-0000-0000-000000000009', 26, 'Boolean Logic', 'Boolean Logic', 'Logic gates (AND, OR, NOT), truth tables', 95, 15, 35, '45:00', 2700),
+('b2000000-0000-0000-0000-000000000009', 27, 'Boolean Logic | Case #1', 'Boolean Logic', 'Logic circuit problems', 100, 18, 40, '48:00', 2880),
+('b2000000-0000-0000-0000-000000000009', 28, 'Boolean Logic | Case #2', 'Boolean Logic', 'Complex Boolean expressions', 100, 18, 40, '48:00', 2880),
+('b2000000-0000-0000-0000-000000000009', 29, 'Programming Review', 'Boolean Logic', 'Comprehensive programming practice', 120, 22, 50, '55:00', 3300),
+
+-- Unit 10: Databases (2 lessons)
+('b2000000-0000-0000-0000-000000000010', 1, 'Databases', 'Database Concepts', 'Database structure, tables, records, fields, keys', 120, 22, 50, '55:00', 3300),
+('b2000000-0000-0000-0000-000000000010', 2, 'Standard Query Language (SQL)', 'SQL', 'SELECT, WHERE, ORDER BY, INSERT, UPDATE, DELETE', 130, 25, 55, '1:00:00', 3600);

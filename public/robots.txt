@@ -1,0 +1,21 @@
+User-agent: *
+Disallow: /auth
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /teacher/
+Disallow: /parent/
+Disallow: /learn
+Disallow: /quiz
+Disallow: /lesson/
+Disallow: /challenges/
+Disallow: /billing
+Disallow: /performance
+Disallow: /alfa-return
+Disallow: /writing-checker
+Disallow: /lesson-complete
+Disallow: /a-level/*/unit/
+Disallow: /subjects/*/unit/
+Disallow: /a-level/*/past-papers/
+Disallow: /subjects/*/past-papers/
+
+Sitemap: https://olevel.com.pk/sitemap.xml

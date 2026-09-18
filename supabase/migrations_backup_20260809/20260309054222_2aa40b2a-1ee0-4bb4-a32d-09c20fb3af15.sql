@@ -1,0 +1,10 @@
+UPDATE public.subjects SET subject_code = 'IGCSE 0452 | O Level 7707' WHERE name = 'Accounting';
+UPDATE public.subjects SET subject_code = 'IGCSE 0610 | O Level 5090' WHERE name = 'Biology';
+UPDATE public.subjects SET subject_code = 'IGCSE 0620 | O Level 5070' WHERE name = 'Chemistry';
+UPDATE public.subjects SET subject_code = 'IGCSE 0500 | O Level 1123' WHERE name = 'English';
+UPDATE public.subjects SET subject_code = 'IGCSE 0478 | O Level 2210' WHERE name = 'ICT';
+UPDATE public.subjects SET subject_code = 'IGCSE 0493 | O Level 2058' WHERE name = 'Islamiyat';
+UPDATE public.subjects SET subject_code = 'IGCSE 0580 | O Level 4024' WHERE name = 'Mathematics';
+UPDATE public.subjects SET subject_code = 'IGCSE 0448 | O Level 2059' WHERE name = 'Pakistan Studies';
+UPDATE public.subjects SET subject_code = 'IGCSE 0625 | O Level 5054' WHERE name = 'Physics';
+UPDATE public.subjects SET subject_code = 'IGCSE 0539 | O Level 3247' WHERE name = 'Urdu';

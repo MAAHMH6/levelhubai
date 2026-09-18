@@ -1,0 +1,51 @@
+# LevelHubAI - olevel.com.pk
+
+## About
+LevelHubAI is Pakistan's leading gamified O-Level exam preparation platform. It helps students prepare for Cambridge O-Level (and IGCSE) examinations through interactive video lessons, AI-powered quizzes, practice questions, past papers, and a gamification system with XP, streaks, badges, and leaderboards.
+
+## URL
+https://olevel.com.pk
+
+## Subjects Offered
+- Mathematics (IGCSE 0580 / O Level 4024)
+- Physics (IGCSE 0625 / O Level 5054)
+- Chemistry (IGCSE 0620 / O Level 5070)
+- Biology (IGCSE 0610 / O Level 5090)
+- ICT (IGCSE 0478 / O Level 2210)
+- English Language
+- Pakistan Studies
+- Islamiyat
+- Urdu
+- Accounting
+
+## Key Features
+- Gamified learning with XP points, levels, streaks, and badges
+- Video lessons aligned to Cambridge CIE curriculum
+- AI-powered quizzes and practice questions
+- Past paper practice with marking scheme analysis
+- AI Tutor for personalized help
+- School challenges and leaderboards
+- Daily missions and goals
+- Weekly progress reports
+
+## Target Audience
+- O-Level students in Pakistan (ages 14-18)
+- Cambridge International Education (CIE) students worldwide
+- Students preparing for IGCSE examinations
+
+## Pricing
+- Free Plan: Access to select subjects (Mathematics, ICT)
+- Pro Plan: All subjects, AI tutoring, advanced features
+
+## Contact
+- Email: hello@olevel.com.pk
+- Phone: +92 3098444501
+- Location: Lahore, Pakistan
+
+## Legal
+- Privacy Policy: https://olevel.com.pk/privacy-policy
+- Terms of Service: https://olevel.com.pk/terms-of-service
+- Cookie Policy: https://olevel.com.pk/cookie-policy
+
+## Disclaimer
+LevelHubAI is an independent learning platform not affiliated with, endorsed by, or associated with Cambridge Assessment International Education. "O Level" is a trademark of Cambridge.
