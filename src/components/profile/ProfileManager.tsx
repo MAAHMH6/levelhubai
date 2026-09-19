@@ -14,6 +14,7 @@ import { User, School, Save, Plus, Send, Crown, CreditCard, ChevronRight, Tag } 
 import { Link } from "react-router-dom";
 import { useSubscription } from "@/hooks/useSubscription";
 import { ParentConnection } from "./ParentConnection";
+import { normalizeProgramme } from "@/contexts/StudentProgrammeContext";
 
 interface School {
   id: string;
@@ -95,11 +96,12 @@ const ProfileManager = () => {
   const saveProfile = async () => {
     if (!user || !profile) return;
     setSaving(true);
+    const normalizedProg = profile.grade_level ? normalizeProgramme(profile.grade_level) : null;
     const { error } = await supabase
       .from("profiles")
       .update({
         display_name: profile.display_name,
-        grade_level: profile.grade_level,
+        grade_level: normalizedProg || profile.grade_level,
         school: profile.school,
         school_id: profile.school_id,
       } as any)
@@ -111,6 +113,11 @@ const ProfileManager = () => {
       toast.error((error || privError)?.message || "Failed to save");
     } else {
       toast.success("Profile updated!");
+      if (normalizedProg) {
+        window.dispatchEvent(new CustomEvent('levelhub:programme_changed', {
+          detail: { programme: normalizedProg }
+        }));
+      }
     }
     setSaving(false);
   };
@@ -221,17 +228,18 @@ const ProfileManager = () => {
         {profile.role !== "teacher" && (
           <div className="space-y-1.5">
             <Label>Qualification</Label>
-            <Select value={profile.grade_level || ""} onValueChange={v => setProfile(prev => prev ? { ...prev, grade_level: v } : prev)}>
+            <Select 
+              value={normalizeProgramme(profile.grade_level) || profile.grade_level || "igcse"} 
+              onValueChange={v => setProfile(prev => prev ? { ...prev, grade_level: v } : prev)}
+            >
               <SelectTrigger><SelectValue placeholder="Select your qualification" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="A-Level">Cambridge A-Level</SelectItem>
-                <SelectItem value="O-Level">Cambridge O-Level</SelectItem>
-                <SelectItem value="IGCSE">Cambridge IGCSE</SelectItem>
-                <SelectItem value="Grade 9">Grade 9</SelectItem>
-                <SelectItem value="Grade 10">Grade 10</SelectItem>
+                <SelectItem value="a_level">Cambridge International A-Level</SelectItem>
+                <SelectItem value="o_level">Cambridge O-Level</SelectItem>
+                <SelectItem value="igcse">Cambridge IGCSE</SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">This tailors your dashboard, subjects and quizzes to the right curriculum.</p>
+            <p className="text-xs text-muted-foreground">This tailors your dashboard, subjects, and past papers to the right Cambridge curriculum.</p>
           </div>
         )}
 

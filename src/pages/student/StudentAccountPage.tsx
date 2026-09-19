@@ -25,7 +25,10 @@ import {
   Users,
   Link as LinkIcon
 } from 'lucide-react';
-import { useStudentProgramme, ProgrammeType } from '@/contexts/StudentProgrammeContext';
+import { useStudentProgramme, ProgrammeType, PROGRAMME_LABELS } from '@/contexts/StudentProgrammeContext';
+import { CANONICAL_A_LEVEL_SUBJECTS } from '@/lib/canonicalALevelSubjects';
+import { CANONICAL_O_LEVEL_SUBJECTS } from '@/lib/canonicalOLevelSubjects';
+import { CANONICAL_IGCSE_SUBJECTS } from '@/lib/canonicalIGCSESubjects';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { featureStorage } from '@/integrations/supabase/featureClient';
@@ -158,6 +161,31 @@ export const StudentAccountPage: React.FC = () => {
   const [examSession, setExamSession] = useState(profile.examSession);
   const [examYear, setExamYear] = useState(profile.examYear);
   const [selectedProg, setSelectedProg] = useState<ProgrammeType>(programme);
+  const [isSavingProg, setIsSavingProg] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  // Synchronize local form state whenever profile updates from DB/storage
+  useEffect(() => {
+    if (profile) {
+      setDisplayName(profile.displayName || '');
+      setSchool(profile.school || '');
+      setCity(profile.city || '');
+      setCountry(profile.country || '');
+      setTargetGrade(profile.targetGrade || '');
+      setExamSession(profile.examSession || '');
+      setExamYear(profile.examYear || '');
+      if (profile.programme) {
+        setSelectedProg(profile.programme);
+      }
+    }
+  }, [profile]);
+
+  // Synchronize selectedProg whenever context programme changes
+  useEffect(() => {
+    if (programme) {
+      setSelectedProg(programme);
+    }
+  }, [programme]);
 
   // Additional comprehensive settings
   const [dailyXpGoal, setDailyXpGoal] = useState('100');
@@ -170,17 +198,41 @@ export const StudentAccountPage: React.FC = () => {
   const referralCode = `LH-${user?.id?.slice(0, 6)?.toUpperCase() || 'STUDENT'}`;
 
   const handleSaveProfile = async () => {
-    await updateProfile({
-      displayName,
-      school,
-      city,
-      country,
-      targetGrade,
-      examSession,
-      examYear,
-      programme: selectedProg,
-    });
-    toast.success('Account preferences saved successfully!');
+    try {
+      setIsSavingProfile(true);
+      await updateProfile({
+        displayName,
+        school,
+        city,
+        country,
+        targetGrade,
+        examSession,
+        examYear,
+        programme: selectedProg,
+      });
+      toast.success('Account preferences saved successfully!');
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Failed to save account preferences');
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
+  const handleUpdateProgramme = async () => {
+    try {
+      setIsSavingProg(true);
+      await updateProfile({
+        programme: selectedProg,
+      });
+      const progLabel = PROGRAMME_LABELS[selectedProg] || selectedProg;
+      toast.success(`Successfully switched active programme to ${progLabel}! All subjects and past papers updated.`);
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Failed to update programme');
+    } finally {
+      setIsSavingProg(false);
+    }
   };
 
   const handleCopyReferral = () => {
@@ -361,8 +413,12 @@ export const StudentAccountPage: React.FC = () => {
             </div>
 
             <div className="pt-2 flex items-center justify-between border-t border-slate-100 dark:border-slate-800">
-              <Button onClick={handleSaveProfile} className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold h-10 px-6">
-                Save Profile Changes
+              <Button 
+                onClick={handleSaveProfile} 
+                disabled={isSavingProfile}
+                className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold h-10 px-6"
+              >
+                {isSavingProfile ? 'Saving...' : 'Save Profile Changes'}
               </Button>
 
               <Button onClick={handleSignOut} variant="ghost" className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs font-bold">
@@ -391,30 +447,58 @@ export const StudentAccountPage: React.FC = () => {
               { id: 'o_level' as ProgrammeType, title: 'Cambridge O Level', desc: 'Curriculum 5054, 5070, 5090, 1123, 2058, 4024...' },
               { id: 'igcse' as ProgrammeType, title: 'Cambridge IGCSE', desc: 'Curriculum 0580, 0625, 0620, 0610, 0478, 0450...' },
               { id: 'a_level' as ProgrammeType, title: 'Cambridge International AS & A Level', desc: 'Curriculum 9709, 9701, 9702, 9700, 9608, 9708...' },
-            ].map((p) => (
-              <div 
-                key={p.id}
-                onClick={() => setSelectedProg(p.id)}
-                className={`p-5 rounded-2xl border-2 cursor-pointer transition-all ${
-                  selectedProg === p.id 
-                    ? 'border-teal-500 bg-teal-50/40 dark:bg-teal-950/30' 
-                    : 'border-slate-200 dark:border-slate-800 hover:border-slate-300'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="text-sm font-bold text-slate-900 dark:text-white">{p.title}</div>
-                  {selectedProg === p.id && <Check className="w-4 h-4 text-teal-600" />}
+            ].map((p) => {
+              const isSelected = selectedProg === p.id;
+              const isCurrent = programme === p.id;
+              return (
+                <div 
+                  key={p.id}
+                  onClick={() => setSelectedProg(p.id)}
+                  className={`p-5 rounded-2xl border-2 cursor-pointer transition-all ${
+                    isSelected 
+                      ? 'border-teal-500 bg-teal-50/40 dark:bg-teal-950/30 ring-2 ring-teal-500/20' 
+                      : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      {p.title}
+                      {isCurrent && (
+                        <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300">
+                          Active
+                        </span>
+                      )}
+                    </div>
+                    {isSelected && <Check className="w-4 h-4 text-teal-600 dark:text-teal-400" />}
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">{p.desc}</p>
                 </div>
-                <p className="text-[11px] text-slate-500 leading-relaxed">{p.desc}</p>
-              </div>
-            ))}
+              );
+            })}
+          </div>
+
+          <div className="pt-2 flex flex-wrap items-center gap-3">
+            <Button 
+              onClick={handleUpdateProgramme} 
+              disabled={isSavingProg}
+              className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold h-10 px-6 shadow-xs"
+            >
+              {isSavingProg ? 'Updating Programme...' : (selectedProg === programme ? 'Programme Currently Active' : `Switch to ${selectedProg === 'o_level' ? 'Cambridge O Level' : selectedProg === 'igcse' ? 'Cambridge IGCSE' : 'Cambridge International A Level'}`)}
+            </Button>
+            {selectedProg !== programme && (
+              <span className="text-xs text-amber-600 dark:text-amber-400 font-medium animate-pulse">
+                Click button to apply programme switch
+              </span>
+            )}
           </div>
 
           {/* Enrolled Subjects List for this Programme */}
           <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                Enrolled Subjects ({subjects.length})
+                {selectedProg === programme 
+                  ? `Enrolled Subjects (${subjects.length})` 
+                  : `Preview Subjects for ${PROGRAMME_LABELS[selectedProg]}`}
               </h4>
               <Badge variant="outline" className="text-[10px] font-semibold text-teal-700 dark:text-teal-300">
                 Cambridge Indexed
@@ -422,7 +506,11 @@ export const StudentAccountPage: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-              {subjects.map(s => (
+              {(selectedProg === programme ? subjects : (
+                selectedProg === 'o_level' ? CANONICAL_O_LEVEL_SUBJECTS.map(s => ({ id: s.id, name: s.name, syllabusCode: s.code, color: s.hex })) :
+                selectedProg === 'igcse' ? CANONICAL_IGCSE_SUBJECTS.map(s => ({ id: s.id, name: s.name, syllabusCode: s.code, color: s.hex })) :
+                CANONICAL_A_LEVEL_SUBJECTS.map(s => ({ id: s.id, name: s.name, syllabusCode: s.code, color: s.hex }))
+              )).map(s => (
                 <div key={s.id} className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
@@ -432,12 +520,6 @@ export const StudentAccountPage: React.FC = () => {
                 </div>
               ))}
             </div>
-          </div>
-
-          <div className="pt-2">
-            <Button onClick={handleSaveProfile} className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold h-10 px-6">
-              Update Programme Selection
-            </Button>
           </div>
         </Card>
       )}

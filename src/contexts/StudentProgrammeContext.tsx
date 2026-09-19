@@ -58,6 +58,21 @@ export interface StudentProfileData {
   selectedSubjectIds: string[];
 }
 
+export const PROGRAMME_LABELS: Record<ProgrammeType, string> = {
+  o_level: 'Cambridge O Level',
+  igcse: 'Cambridge IGCSE',
+  a_level: 'Cambridge International A Level',
+};
+
+export const normalizeProgramme = (val: string | null | undefined): ProgrammeType => {
+  if (!val) return 'igcse';
+  const clean = val.toLowerCase().replace(/[-_\s]+/g, '');
+  if (clean.includes('olevel')) return 'o_level';
+  if (clean.includes('alevel') || clean.includes('aslevel')) return 'a_level';
+  if (clean.includes('igcse')) return 'igcse';
+  return 'igcse';
+};
+
 interface StudentProgrammeContextType {
   profile: StudentProfileData;
   programme: ProgrammeType;
@@ -71,18 +86,13 @@ interface StudentProgrammeContextType {
   userSelectedSubjects: SubjectItem[];
   rawSubjects: any[];
   loading: boolean;
+  setProgramme: (programme: ProgrammeType) => Promise<void>;
   updateProfile: (data: Partial<StudentProfileData>) => Promise<void>;
   toggleSubjectSelection: (subjectId: string) => void;
   getSubjectById: (subjectId: string) => SubjectItem | undefined;
   getSubjectBySlug: (slug: string) => SubjectItem | undefined;
   awardXp: (amount: number, options?: { streakIncrement?: boolean }) => Promise<void>;
 }
-
-const PROGRAMME_LABELS: Record<ProgrammeType, string> = {
-  o_level: 'Cambridge O Level',
-  igcse: 'Cambridge IGCSE',
-  a_level: 'Cambridge International A Level',
-};
 
 const DEFAULT_PROFILE: StudentProfileData = {
   id: 'guest_student',
@@ -337,13 +347,10 @@ export const StudentProgrammeProvider: React.FC<{ children: React.ReactNode }> =
             .maybeSingle();
 
           if (data) {
-            let prog: ProgrammeType = 'igcse';
-            if (data.grade_level) {
-              const lower = data.grade_level.toLowerCase();
-              if (lower.includes('o_level') || lower.includes('o level')) prog = 'o_level';
-              else if (lower.includes('a_level') || lower.includes('a level')) prog = 'a_level';
-              else if (lower.includes('igcse')) prog = 'igcse';
-            }
+            // Determine programme from DB grade_level, or fallback to current cached programme
+            const prog: ProgrammeType = data.grade_level 
+              ? normalizeProgramme(data.grade_level) 
+              : (current.programme || 'igcse');
 
             current = {
               ...current,
@@ -353,11 +360,11 @@ export const StudentProgrammeProvider: React.FC<{ children: React.ReactNode }> =
               programme: prog,
               programmeLabel: PROGRAMME_LABELS[prog],
               school: data.school || current.school,
-              streakDays: data.streak_days ?? 0,
-              xpPoints: data.xp_points ?? 0,
-              level: data.level ?? 1,
-              coins: data.coins ?? 0,
-              selectedSubjectIds: data.subjects ?? [],
+              streakDays: data.streak_days ?? current.streakDays ?? 0,
+              xpPoints: data.xp_points ?? current.xpPoints ?? 0,
+              level: data.level ?? current.level ?? 1,
+              coins: data.coins ?? current.coins ?? 0,
+              selectedSubjectIds: data.subjects ?? current.selectedSubjectIds ?? [],
             };
           }
         } catch (err) {
@@ -666,9 +673,20 @@ export const StudentProgrammeProvider: React.FC<{ children: React.ReactNode }> =
   const updateProfile = async (partial: Partial<StudentProfileData>) => {
     setProfile(prev => {
       const next = { ...prev, ...partial };
+      if (partial.programme) {
+        next.programme = partial.programme;
+        next.programmeLabel = PROGRAMME_LABELS[partial.programme] || prev.programmeLabel;
+      }
       saveProfileToStorage(next);
       return next;
     });
+
+    // Notify all app components immediately if programme changed
+    if (partial.programme) {
+      window.dispatchEvent(new CustomEvent('levelhub:programme_changed', {
+        detail: { programme: partial.programme, programmeLabel: PROGRAMME_LABELS[partial.programme] }
+      }));
+    }
 
     if (user?.id) {
       try {
@@ -676,24 +694,31 @@ export const StudentProgrammeProvider: React.FC<{ children: React.ReactNode }> =
           updated_at: new Date().toISOString(),
           last_active_at: new Date().toISOString(),
         };
-        if (partial.displayName) payload.display_name = partial.displayName;
-        if (partial.school) payload.school = partial.school;
+        if (partial.displayName !== undefined) payload.display_name = partial.displayName;
+        if (partial.school !== undefined) payload.school = partial.school;
         if (partial.xpPoints !== undefined) payload.xp_points = partial.xpPoints;
         if (partial.level !== undefined) payload.level = partial.level;
         if (partial.streakDays !== undefined) payload.streak_days = partial.streakDays;
         if (partial.coins !== undefined) payload.coins = partial.coins;
-        if (partial.selectedSubjectIds) payload.subjects = partial.selectedSubjectIds;
+        if (partial.selectedSubjectIds !== undefined) payload.subjects = partial.selectedSubjectIds;
         // Persist programme selection so it survives page refresh / re-login
+        // NOTE: profiles table column is 'grade_level'. Do NOT include 'programme' column!
         if (partial.programme) {
           payload.grade_level = partial.programme;
-          payload.programme = partial.programme;
         }
 
-        await supabase.from('profiles').update(payload).eq('id', user.id);
+        const { error } = await supabase.from('profiles').update(payload).eq('id', user.id);
+        if (error) {
+          console.error('Error syncing profile to Supabase:', error);
+        }
       } catch (err) {
         console.error('Error syncing profile to Supabase:', err);
       }
     }
+  };
+
+  const setProgramme = async (prog: ProgrammeType) => {
+    await updateProfile({ programme: prog });
   };
 
   const toggleSubjectSelection = (subjectId: string) => {
@@ -927,6 +952,28 @@ export const StudentProgrammeProvider: React.FC<{ children: React.ReactNode }> =
     return () => window.removeEventListener('levelhub:xp_updated', handleXpEvent);
   }, []);
 
+  // Live listener for levelhub:programme_changed across browser components
+  useEffect(() => {
+    const handleProgEvent = (e: any) => {
+      const detail = e.detail;
+      if (detail?.programme) {
+        const prog = detail.programme as ProgrammeType;
+        setProfile(prev => {
+          if (prev.programme === prog) return prev;
+          const next = {
+            ...prev,
+            programme: prog,
+            programmeLabel: PROGRAMME_LABELS[prog] || prev.programmeLabel,
+          };
+          saveProfileToStorage(next);
+          return next;
+        });
+      }
+    };
+    window.addEventListener('levelhub:programme_changed', handleProgEvent);
+    return () => window.removeEventListener('levelhub:programme_changed', handleProgEvent);
+  }, []);
+
   return (
     <StudentProgrammeContext.Provider
       value={{
@@ -942,6 +989,7 @@ export const StudentProgrammeProvider: React.FC<{ children: React.ReactNode }> =
         userSelectedSubjects,
         rawSubjects,
         loading,
+        setProgramme,
         updateProfile,
         toggleSubjectSelection,
         getSubjectById,
