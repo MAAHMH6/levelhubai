@@ -5,6 +5,8 @@
  */
 
 import { CANONICAL_A_LEVEL_SUBJECTS } from "./canonicalALevelSubjects";
+import { CANONICAL_O_LEVEL_SUBJECTS } from "./canonicalOLevelSubjects";
+import { CANONICAL_IGCSE_SUBJECTS } from "./canonicalIGCSESubjects";
 
 export interface StoredLesson {
   id: string;
@@ -370,6 +372,54 @@ class AdminDataStore {
           subscription_tier: spec.code === '9709' ? 'free' : 'pro',
           is_premium: spec.code !== '9709',
           description: `Cambridge International AS and A Level ${spec.name} (${spec.code})`,
+        };
+        const override = this.state.subjects[spec.id];
+        result.push(override ? { ...fallbackObj, ...override } : fallbackObj);
+      }
+    });
+
+    // Ensure all 17 canonical O-Level subjects exist for admin management
+    CANONICAL_O_LEVEL_SUBJECTS.forEach((spec) => {
+      const exists = result.some(
+        (s) => s.id === spec.id || (s.subject_code && s.subject_code.trim() === spec.code && (s.qualification === 'o_level' || s.qualification === 'both'))
+      );
+      if (!exists && !deletedSet.has(spec.id)) {
+        const fallbackObj: any = {
+          id: spec.id,
+          name: spec.name,
+          subject_code: spec.code,
+          qualification: 'o_level',
+          color: spec.hex,
+          icon: spec.icon,
+          display_order: spec.order,
+          enabled: true,
+          subscription_tier: (spec.code === '4024' || spec.code === '5054' || spec.code === '0417') ? 'free' : 'pro',
+          is_premium: !(spec.code === '4024' || spec.code === '5054' || spec.code === '0417'),
+          description: spec.description,
+        };
+        const override = this.state.subjects[spec.id];
+        result.push(override ? { ...fallbackObj, ...override } : fallbackObj);
+      }
+    });
+
+    // Ensure all 19 canonical IGCSE subjects exist for admin management
+    CANONICAL_IGCSE_SUBJECTS.forEach((spec) => {
+      const exists = result.some(
+        (s) => s.id === spec.id || (s.subject_code && s.subject_code.trim() === spec.code && (s.qualification === 'igcse' || s.qualification === 'both'))
+      );
+      if (!exists && !deletedSet.has(spec.id)) {
+        const fallbackObj: any = {
+          id: spec.id,
+          name: spec.name,
+          subject_code: spec.code,
+          qualification: 'igcse',
+          color: spec.hex,
+          icon: spec.icon,
+          display_order: spec.order,
+          enabled: true,
+          subscription_tier: (spec.code === '0580' || spec.code === '0625' || spec.code === '0417') ? 'free' : 'pro',
+          is_premium: !(spec.code === '0580' || spec.code === '0625' || spec.code === '0417'),
+          description: spec.description,
         };
         const override = this.state.subjects[spec.id];
         result.push(override ? { ...fallbackObj, ...override } : fallbackObj);

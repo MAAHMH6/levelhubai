@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { featureStorage } from '@/integrations/supabase/featureClient';
 import { CANONICAL_A_LEVEL_SUBJECTS } from '@/lib/canonicalALevelSubjects';
+import { CANONICAL_O_LEVEL_SUBJECTS } from '@/lib/canonicalOLevelSubjects';
+import { CANONICAL_IGCSE_SUBJECTS } from '@/lib/canonicalIGCSESubjects';
 
 export type ProgrammeType = 'o_level' | 'igcse' | 'a_level';
 
@@ -231,44 +233,40 @@ export const CAMBRIDGE_SUBJECT_COLORS: Record<string, string> = {
 };
 
 export const ALL_FALLBACK_SUBJECTS = [
-  // Canonical O Level Subjects
-  { id: "8082b9e0-36d3-440b-9ca2-6bab67473da6", name: "English Language", subject_code: "1123", qualification: "o_level", subscription_tier: "pro" },
-  { id: "22c9be77-9ec7-44d3-9c20-04cad5f895e6", name: "Mathematics", subject_code: "4024", qualification: "o_level", subscription_tier: "free" },
-  { id: "ccb3187a-65fa-4071-8408-43da8034b90f", name: "Urdu – First Language", subject_code: "3247", qualification: "o_level", subscription_tier: "pro" },
-  { id: "c3d4e5f6-a7b8-9012-cdef-123456789012", name: "Urdu – Second Language", subject_code: "3248", qualification: "o_level", subscription_tier: "pro" },
-  { id: "b2c3d4e5-f6a7-8901-bcde-f12345678901", name: "Islamiyat", subject_code: "2058", qualification: "o_level", subscription_tier: "pro" },
-  { id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890", name: "Pakistan Studies", subject_code: "2059", qualification: "o_level", subscription_tier: "pro" },
-  { id: "5f1acad5-c73c-4156-b56e-b99997e52b35", name: "Chemistry", subject_code: "5070", qualification: "o_level", subscription_tier: "pro" },
-  { id: "04b0e4e8-5cb2-4692-93e8-9250a3f9f4b3", name: "Physics", subject_code: "5054", qualification: "o_level", subscription_tier: "free" },
-  { id: "f291da7d-59d4-470d-8437-f2117f026ee4", name: "Biology", subject_code: "5090", qualification: "o_level", subscription_tier: "pro" },
-  { id: "canonical-o-add-maths", name: "Additional Mathematics", subject_code: "4037", qualification: "o_level", subscription_tier: "pro" },
-  { id: "canonical-o-economics", name: "Economics", subject_code: "2281", qualification: "o_level", subscription_tier: "pro" },
-  { id: "canonical-o-business", name: "Business Studies", subject_code: "7115", qualification: "o_level", subscription_tier: "pro" },
-  { id: "canonical-o-literature", name: "Literature in English", subject_code: "2010", qualification: "o_level", subscription_tier: "pro" },
-  { id: "canonical-o-sociology", name: "Sociology", subject_code: "2251", qualification: "o_level", subscription_tier: "pro" },
-  { id: "canonical-o-ict", name: "Information and Communication Technology", subject_code: "0417", qualification: "o_level", subscription_tier: "free" },
-  { id: "f249052a-6c35-4d36-b9f7-0e1f5bf213a7", name: "Computer Science", subject_code: "2210", qualification: "o_level", subscription_tier: "pro" },
-  { id: "ccbb2c24-2412-4261-8f55-016e33b0909f", name: "Accounting", subject_code: "7707", qualification: "o_level", subscription_tier: "pro" },
+  // Canonical O Level Subjects (17)
+  ...CANONICAL_O_LEVEL_SUBJECTS.map(s => ({
+    id: s.id,
+    name: s.name,
+    subject_code: s.code,
+    qualification: "o_level",
+    subscription_tier: (s.code === "4024" || s.code === "5054" || s.code === "0417") ? "free" : "pro",
+    is_premium: !(s.code === "4024" || s.code === "5054" || s.code === "0417"),
+    color: s.hex,
+    icon: s.icon,
+    display_order: s.order,
+  })),
 
-  // Canonical IGCSE Subjects
-  { id: "00580068-5b7f-4b63-b338-3f44020820ff", name: "Accounting IGCSE", subject_code: "0452", qualification: "igcse", subscription_tier: "pro" },
-  { id: "454404df-eaf0-4405-9555-0981813d14a1", name: "Biology IGCSE", subject_code: "0610", qualification: "igcse", subscription_tier: "pro" },
-  { id: "51ab1b5d-e371-487d-a795-b8e7a4915eb7", name: "Chemistry IGCSE", subject_code: "0620", qualification: "igcse", subscription_tier: "pro" },
-  { id: "665ca56f-3f48-4b97-83bb-0dbaf926f712", name: "English IGCSE First Lang", subject_code: "0500", qualification: "igcse", subscription_tier: "pro" },
-  { id: "9e8f8d13-8678-4fac-9ed2-e99470ed57d2", name: "English IGCSE Literature", subject_code: "0475", qualification: "igcse", subscription_tier: "pro" },
-  { id: "1e9c3949-21d7-479a-8cce-e692d19ac2f8", name: "English IGCSE Second Lang", subject_code: "0510", qualification: "igcse", subscription_tier: "pro" },
-  { id: "5f97d9a6-f176-4d79-8a4c-2a859881a6a1", name: "ICT IGCSE", subject_code: "0417", qualification: "igcse", subscription_tier: "pro" },
-  { id: "f8899927-c4b4-4b0f-bc0c-87220b75df16", name: "Mathematics IGCSE", subject_code: "0580", qualification: "igcse", subscription_tier: "pro" },
-  { id: "c2f640a2-f25b-4cc9-8f95-144913b51254", name: "Physics IGCSE", subject_code: "0625", qualification: "igcse", subscription_tier: "pro" },
-  { id: "8e378b20-ced7-4b89-9b85-d5e34ed012a7", name: "Urdu Second Lang IGCSE", subject_code: "0539", qualification: "igcse", subscription_tier: "pro" },
+  // Canonical IGCSE Subjects (19)
+  ...CANONICAL_IGCSE_SUBJECTS.map(s => ({
+    id: s.id,
+    name: s.name,
+    subject_code: s.code,
+    qualification: "igcse",
+    subscription_tier: (s.code === "0580" || s.code === "0625" || s.code === "0417") ? "free" : "pro",
+    is_premium: !(s.code === "0580" || s.code === "0625" || s.code === "0417"),
+    color: s.hex,
+    icon: s.icon,
+    display_order: s.order,
+  })),
 
-  // Canonical 18 A Level Subjects
+  // Canonical A Level Subjects (18)
   ...CANONICAL_A_LEVEL_SUBJECTS.map(s => ({
     id: s.id,
     name: s.name,
     subject_code: s.code,
     qualification: "a_level",
     subscription_tier: s.code === "9709" ? "free" : "pro",
+    is_premium: s.code !== "9709",
     color: s.hex,
     icon: s.icon,
     display_order: s.order,
@@ -567,53 +565,61 @@ export const StudentProgrammeProvider: React.FC<{ children: React.ReactNode }> =
       let code = (subj.subject_code ? subj.subject_code.trim() : null) || SYLLABUS_CODES[cleanName] || 'Syllabus';
       let name = subj.name;
 
-      if (prog === 'o_level') {
-        if (code === '2210' || cleanName.includes('2210')) {
-          name = 'Computer Science';
-          code = '2210';
-        } else if (code === '0417' || cleanName.includes('0417')) {
-          name = 'Information and Communication Technology';
-          code = '0417';
-        } else if (cleanName.includes('mathematics') && !cleanName.includes('additional')) {
-          name = 'Mathematics';
-          code = '4024';
-        } else if (cleanName.includes('physics')) {
-          name = 'Physics';
-          code = '5054';
-        } else if (cleanName.includes('english') && !cleanName.includes('literature')) {
-          name = 'English Language';
-          code = '1123';
-        } else if (cleanName.includes('chemistry')) {
-          name = 'Chemistry';
-          code = '5070';
-        } else if (cleanName.includes('biology')) {
-          name = 'Biology';
-          code = '5090';
-        } else if (cleanName.includes('islamiyat')) {
-          name = 'Islamiyat';
-          code = '2058';
-        } else if (cleanName.includes('pakistan studies')) {
-          name = 'Pakistan Studies';
-          code = '2059';
-        } else if (cleanName.includes('accounting')) {
-          name = 'Accounting';
-          code = '7707';
-        } else if (cleanName.includes('urdu') && cleanName.includes('first')) {
-          name = 'Urdu – First Language';
-          code = '3247';
-        } else if (cleanName.includes('urdu') && (cleanName.includes('second') || cleanName.includes('2nd'))) {
-          name = 'Urdu – Second Language';
-          code = '3248';
-        }
-      }
-
       let icon = subj.icon || 'BookOpen';
       let displayOrder = subj.display_order ?? 999;
       let brandColor = subj.color && subj.color.startsWith('#')
         ? subj.color
         : getSubjectBrandColor(name, subj.color);
 
-      if (prog === 'a_level') {
+      if (prog === 'o_level') {
+        const canonical = CANONICAL_O_LEVEL_SUBJECTS.find(c =>
+          c.code === (subj.subject_code ? subj.subject_code.trim() : '') ||
+          c.id === subj.id ||
+          c.name.toLowerCase() === cleanName ||
+          cleanName.includes(c.name.toLowerCase()) ||
+          c.name.toLowerCase().includes(cleanName)
+        );
+
+        if (canonical) {
+          name = canonical.name;
+          code = canonical.code;
+          displayOrder = canonical.order;
+          if (!subj.color || !subj.color.startsWith('#') || subj.color.startsWith('hsl')) {
+            brandColor = canonical.hex;
+          } else {
+            brandColor = subj.color;
+          }
+          if (!subj.icon || subj.icon.length <= 2 || subj.icon === 'Calculator' || subj.icon === 'BookOpen') {
+            icon = canonical.icon;
+          } else {
+            icon = subj.icon;
+          }
+        }
+      } else if (prog === 'igcse') {
+        const canonical = CANONICAL_IGCSE_SUBJECTS.find(c =>
+          c.code === (subj.subject_code ? subj.subject_code.trim() : '') ||
+          c.id === subj.id ||
+          c.name.toLowerCase() === cleanName ||
+          cleanName.includes(c.name.toLowerCase()) ||
+          c.name.toLowerCase().includes(cleanName)
+        );
+
+        if (canonical) {
+          name = canonical.name;
+          code = canonical.code;
+          displayOrder = canonical.order;
+          if (!subj.color || !subj.color.startsWith('#') || subj.color.startsWith('hsl')) {
+            brandColor = canonical.hex;
+          } else {
+            brandColor = subj.color;
+          }
+          if (!subj.icon || subj.icon.length <= 2 || subj.icon === 'Calculator' || subj.icon === 'BookOpen') {
+            icon = canonical.icon;
+          } else {
+            icon = subj.icon;
+          }
+        }
+      } else if (prog === 'a_level') {
         const canonical = CANONICAL_A_LEVEL_SUBJECTS.find(c =>
           c.code === (subj.subject_code ? subj.subject_code.trim() : '') ||
           c.id === subj.id ||
