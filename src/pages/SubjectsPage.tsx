@@ -7,7 +7,11 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useStudentProgramme, ALL_FALLBACK_SUBJECTS } from "@/contexts/StudentProgrammeContext";
+import { useStudentProgramme } from "@/contexts/StudentProgrammeContext";
+import { CANONICAL_A_LEVEL_SUBJECTS } from "@/lib/canonicalALevelSubjects";
+import { CANONICAL_O_LEVEL_SUBJECTS } from "@/lib/canonicalOLevelSubjects";
+import { CANONICAL_IGCSE_SUBJECTS } from "@/lib/canonicalIGCSESubjects";
+import { adminDataStore } from "@/lib/adminDataStore";
 import * as Icons from "lucide-react";
 
 const SubjectsPage = () => {
@@ -27,9 +31,8 @@ const SubjectsPage = () => {
           .order('display_order', { ascending: true })
           .order('name', { ascending: true });
 
-        if (!error && data && data.length > 0) {
-          setDbSubjects(data);
-        }
+        const merged = adminDataStore.applySubjectOverrides(data || []);
+        setDbSubjects(merged);
       } catch (err) {
         console.error("Error loading subjects in SubjectsPage:", err);
       } finally {
@@ -40,99 +43,29 @@ const SubjectsPage = () => {
   }, []);
 
   const displayedSubjects = useMemo(() => {
-    const pool = [...dbSubjects];
-    ALL_FALLBACK_SUBJECTS.forEach(fallback => {
-      const exists = pool.some(s => 
-        s.id === fallback.id || 
-        (s.subject_code && fallback.subject_code && s.subject_code.trim() === fallback.subject_code.trim())
+    const list = 
+      activeTab === 'o_level' ? CANONICAL_O_LEVEL_SUBJECTS :
+      activeTab === 'igcse' ? CANONICAL_IGCSE_SUBJECTS :
+      CANONICAL_A_LEVEL_SUBJECTS;
+
+    return list.map(spec => {
+      const dbMatch = dbSubjects.find(s =>
+        s.id === spec.id ||
+        (s.subject_code && s.subject_code.trim() === spec.code && (s.qualification === activeTab || s.qualification === 'both'))
       );
-      if (!exists) pool.push(fallback as any);
-    });
-
-    const filtered = pool.filter(subj => {
-      if (subj.enabled === false) return false;
-      const q = (subj.qualification || '').toLowerCase();
-      const n = (subj.name || '').toLowerCase();
-      if (activeTab === 'o_level') {
-        if (q === 'o_level' || n.includes('olevel') || n.includes('o level')) return true;
-        if (q === 'both') {
-          const baseName = n.split(' ')[0];
-          const hasSpecific = pool.some(s => 
-            (s.qualification?.toLowerCase() === 'o_level' || s.name?.toLowerCase().includes('olevel')) &&
-            s.name?.toLowerCase().startsWith(baseName)
-          );
-          return !hasSpecific;
-        }
-        return false;
-      }
-      if (activeTab === 'igcse') {
-        if (q === 'igcse' || n.includes('igcse')) return true;
-        if (q === 'both') {
-          const baseName = n.split(' ')[0];
-          const hasSpecific = pool.some(s => 
-            (s.qualification?.toLowerCase() === 'igcse' || s.name?.toLowerCase().includes('igcse')) &&
-            s.name?.toLowerCase().startsWith(baseName)
-          );
-          return !hasSpecific;
-        }
-        return false;
-      }
-      if (activeTab === 'a_level') {
-        if (q === 'a_level' || n.includes('a-level') || n.includes('a level')) return true;
-        return false;
-      }
-      return true;
-    });
-
-    return filtered.map(subj => {
-      const cleanName = (subj.name || '').trim().toLowerCase();
-      let code = (subj.subject_code ? subj.subject_code.trim() : null) || '';
-      let name = subj.name;
-
-      if (activeTab === 'o_level') {
-        if (code === '2210' || cleanName.includes('2210')) {
-          name = 'Computer Science';
-          code = '2210';
-        } else if (code === '0417' || cleanName.includes('0417')) {
-          name = 'Information and Communication Technology';
-          code = '0417';
-        } else if (cleanName.includes('mathematics') && !cleanName.includes('additional')) {
-          name = 'Mathematics';
-          code = '4024';
-        } else if (cleanName.includes('physics')) {
-          name = 'Physics';
-          code = '5054';
-        } else if (cleanName.includes('english') && !cleanName.includes('literature')) {
-          name = 'English Language';
-          code = '1123';
-        } else if (cleanName.includes('chemistry')) {
-          name = 'Chemistry';
-          code = '5070';
-        } else if (cleanName.includes('biology')) {
-          name = 'Biology';
-          code = '5090';
-        } else if (cleanName.includes('islamiyat')) {
-          name = 'Islamiyat';
-          code = '2058';
-        } else if (cleanName.includes('pakistan studies')) {
-          name = 'Pakistan Studies';
-          code = '2059';
-        } else if (cleanName.includes('accounting')) {
-          name = 'Accounting';
-          code = '7707';
-        } else if (cleanName.includes('urdu') && cleanName.includes('first')) {
-          name = 'Urdu – First Language';
-          code = '3247';
-        } else if (cleanName.includes('urdu') && (cleanName.includes('second') || cleanName.includes('2nd'))) {
-          name = 'Urdu – Second Language';
-          code = '3248';
-        }
-      }
 
       return {
-        ...subj,
-        name,
-        subject_code: code,
+        id: dbMatch?.id || spec.id,
+        name: spec.name,
+        subject_code: spec.code,
+        qualification: activeTab,
+        color: spec.hex,
+        icon: spec.icon,
+        display_order: spec.order,
+        description: spec.description,
+        subscription_tier: (spec.code === '4024' || spec.code === '5054' || spec.code === '0417' || spec.code === '0580' || spec.code === '0625' || spec.code === '9709') ? 'free' : 'pro',
+        is_premium: !(spec.code === '4024' || spec.code === '5054' || spec.code === '0417' || spec.code === '0580' || spec.code === '0625' || spec.code === '9709'),
+        qualification_variant: undefined,
       };
     });
   }, [dbSubjects, activeTab]);
@@ -182,12 +115,11 @@ const SubjectsPage = () => {
             </p>
           </div>
 
-          {/* Subjects Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {/* Subjects Grid (3 Columns Layout) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {displayedSubjects.map((subject) => {
               const IconComponent = (Icons as any)[subject.icon] || Icons.BookOpen;
               const isFree = subject.subscription_tier === 'free' || subject.is_premium === false;
-              const bgColorClass = subject.color && subject.color.startsWith('hsl') ? { background: subject.color } : {};
 
               return (
                 <div
@@ -197,16 +129,20 @@ const SubjectsPage = () => {
                   {/* Color strip */}
                   <div>
                     <div 
-                      className={`h-2.5 ${subject.color && subject.color.startsWith('from-') ? `bg-gradient-to-r ${subject.color}` : 'bg-primary'}`} 
-                      style={bgColorClass}
+                      className="h-2.5 w-full transition-all duration-300 group-hover:h-3" 
+                      style={{ backgroundColor: subject.color }}
                     />
                     
                     <div className="p-6">
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center gap-3">
                           <div 
-                            className={`w-12 h-12 rounded-xl flex items-center justify-center text-white shrink-0 ${subject.color && subject.color.startsWith('from-') ? `bg-gradient-to-br ${subject.color}` : 'bg-primary'}`}
-                            style={bgColorClass}
+                            className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-xs transition-transform duration-300 group-hover:scale-105"
+                            style={{
+                              backgroundColor: `${subject.color}18`,
+                              color: subject.color,
+                              border: `1px solid ${subject.color}35`,
+                            }}
                           >
                             <IconComponent className="w-6 h-6" />
                           </div>

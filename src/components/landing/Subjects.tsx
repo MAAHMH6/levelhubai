@@ -185,8 +185,8 @@ export const Subjects = () => {
           </span>
         </div>
 
-        {/* Subjects Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 max-w-7xl mx-auto mb-14">
+        {/* Subjects Grid (3 Columns Layout) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto mb-14">
           {programmeSubjects.map((subject) => {
             const IconComponent = (Icons as any)[subject.icon] || Icons.BookOpen;
 

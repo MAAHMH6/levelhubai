@@ -1,12 +1,13 @@
 -- ==============================================================================
--- PHASE 2B: Cambridge IGCSE Canonical Subjects Reconciliation
+-- PHASE 2B: Cambridge IGCSE Canonical Subjects Reconciliation (21 Subjects)
 -- Non-destructive, idempotent migration to align public.subjects for Cambridge IGCSE.
 -- Preserves all existing UUIDs, foreign keys, units, lessons, quizzes, and past papers.
+-- Includes Psychology (0990) and matches the exact O Level subject roster.
 -- ==============================================================================
 
 BEGIN;
 
--- 1. In-place UPDATE of existing IGCSE subjects to ensure canonical names, codes, colors, orders, and icons
+-- 1. In-place UPDATE of existing IGCSE subjects
 UPDATE public.subjects
 SET 
   name = 'Mathematics',
@@ -28,7 +29,7 @@ SET
   qualification = 'igcse',
   color = '#8B5CF6',
   icon = 'Atom',
-  display_order = 2,
+  display_order = 3,
   enabled = true,
   is_premium = false,
   subscription_tier = 'free',
@@ -42,7 +43,7 @@ SET
   qualification = 'igcse',
   color = '#06B6D4',
   icon = 'FlaskConical',
-  display_order = 3,
+  display_order = 4,
   enabled = true,
   is_premium = true,
   subscription_tier = 'pro',
@@ -56,7 +57,7 @@ SET
   qualification = 'igcse',
   color = '#16A34A',
   icon = 'Dna',
-  display_order = 4,
+  display_order = 5,
   enabled = true,
   is_premium = true,
   subscription_tier = 'pro',
@@ -70,7 +71,7 @@ SET
   qualification = 'igcse',
   color = '#0284C7',
   icon = 'Monitor',
-  display_order = 5,
+  display_order = 6,
   enabled = true,
   is_premium = false,
   subscription_tier = 'free',
@@ -84,7 +85,7 @@ SET
   qualification = 'igcse',
   color = '#2563EB',
   icon = 'BookOpen',
-  display_order = 7,
+  display_order = 8,
   enabled = true,
   is_premium = true,
   subscription_tier = 'pro',
@@ -98,7 +99,7 @@ SET
   qualification = 'igcse',
   color = '#38BDF8',
   icon = 'BookOpen',
-  display_order = 8,
+  display_order = 9,
   enabled = true,
   is_premium = true,
   subscription_tier = 'pro',
@@ -112,7 +113,7 @@ SET
   qualification = 'igcse',
   color = '#BE185D',
   icon = 'BookText',
-  display_order = 9,
+  display_order = 10,
   enabled = true,
   is_premium = true,
   subscription_tier = 'pro',
@@ -126,7 +127,7 @@ SET
   qualification = 'igcse',
   color = '#E11D48',
   icon = 'ReceiptText',
-  display_order = 10,
+  display_order = 11,
   enabled = true,
   is_premium = true,
   subscription_tier = 'pro',
@@ -140,14 +141,14 @@ SET
   qualification = 'igcse',
   color = '#D97706',
   icon = 'Languages',
-  display_order = 13,
+  display_order = 17,
   enabled = true,
   is_premium = true,
   subscription_tier = 'pro',
   description = COALESCE(description, 'Cambridge IGCSE Urdu – Second Language (0539)')
 WHERE id = '8e378b20-ced7-4b89-9b85-d5e34ed012a7';
 
--- 2. Insert missing canonical IGCSE subject containers (idempotent ON CONFLICT DO UPDATE)
+-- 2. Insert missing canonical IGCSE subject containers (11 containers)
 INSERT INTO public.subjects (
   id,
   name,
@@ -162,13 +163,26 @@ INSERT INTO public.subjects (
   description
 ) VALUES
   (
+    'c0040606-0000-4000-8000-000000000606',
+    'Additional Mathematics',
+    '0606',
+    'igcse',
+    '#7C3AED',
+    'Sigma',
+    2,
+    true,
+    true,
+    'pro',
+    'Cambridge IGCSE Additional Mathematics (0606)'
+  ),
+  (
     'c0010478-0000-4000-8000-000000000478',
     'Computer Science',
     '0478',
     'igcse',
     '#4F46E5',
     'Code2',
-    6,
+    7,
     true,
     true,
     'pro',
@@ -181,7 +195,7 @@ INSERT INTO public.subjects (
     'igcse',
     '#92400E',
     'TrendingUp',
-    11,
+    12,
     true,
     true,
     'pro',
@@ -194,37 +208,11 @@ INSERT INTO public.subjects (
     'igcse',
     '#B45309',
     'BriefcaseBusiness',
-    12,
+    13,
     true,
     true,
     'pro',
     'Cambridge IGCSE Business Studies (0450)'
-  ),
-  (
-    'c0040606-0000-4000-8000-000000000606',
-    'Additional Mathematics',
-    '0606',
-    'igcse',
-    '#7C3AED',
-    'Sigma',
-    14,
-    true,
-    true,
-    'pro',
-    'Cambridge IGCSE Additional Mathematics (0606)'
-  ),
-  (
-    'c0050495-0000-4000-8000-000000000495',
-    'Sociology',
-    '0495',
-    'igcse',
-    '#475569',
-    'Users',
-    15,
-    true,
-    true,
-    'pro',
-    'Cambridge IGCSE Sociology (0495)'
   ),
   (
     'c0060493-0000-4000-8000-000000000493',
@@ -233,7 +221,7 @@ INSERT INTO public.subjects (
     'igcse',
     '#059669',
     'Moon',
-    16,
+    14,
     true,
     true,
     'pro',
@@ -246,11 +234,37 @@ INSERT INTO public.subjects (
     'igcse',
     '#047857',
     'Map',
-    17,
+    15,
     true,
     true,
     'pro',
     'Cambridge IGCSE Pakistan Studies (0448)'
+  ),
+  (
+    'c0100538-0000-4000-8000-000000000538',
+    'Urdu – First Language',
+    '0538',
+    'igcse',
+    '#EA580C',
+    'Languages',
+    16,
+    true,
+    true,
+    'pro',
+    'Cambridge IGCSE Urdu – First Language (0538)'
+  ),
+  (
+    'c0050495-0000-4000-8000-000000000495',
+    'Sociology',
+    '0495',
+    'igcse',
+    '#475569',
+    'Users',
+    18,
+    true,
+    true,
+    'pro',
+    'Cambridge IGCSE Sociology (0495)'
   ),
   (
     'c0080460-0000-4000-8000-000000000460',
@@ -259,7 +273,7 @@ INSERT INTO public.subjects (
     'igcse',
     '#CA8A04',
     'Globe2',
-    18,
+    19,
     true,
     true,
     'pro',
@@ -272,11 +286,24 @@ INSERT INTO public.subjects (
     'igcse',
     '#64748B',
     'Landmark',
-    19,
+    20,
     true,
     true,
     'pro',
     'Cambridge IGCSE History (0470)'
+  ),
+  (
+    'c0110990-0000-4000-8000-000000000990',
+    'Psychology',
+    '0990',
+    'igcse',
+    '#C026D3',
+    'Brain',
+    21,
+    true,
+    true,
+    'pro',
+    'Cambridge IGCSE Psychology (0990)'
   )
 ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name,

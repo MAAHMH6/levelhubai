@@ -1,22 +1,23 @@
 -- ==============================================================================
--- MASTER CANONICAL RECONCILIATION FOR ALL PROGRAMMES
--- (Cambridge O Level, Cambridge IGCSE, Cambridge International A Level)
+-- MASTER CANONICAL RECONCILIATION FOR ALL PROGRAMMES (ALL-AT-ONCE)
+-- (Cambridge O Level 21 Subjects, Cambridge IGCSE 21 Subjects, Cambridge A Level 18 Subjects)
 --
 -- Features:
 -- 1. Non-destructive: In-place UPDATE on all existing subjects preserving foreign keys,
 --    UUIDs, curriculum, lessons, quizzes, and past papers.
 -- 2. Safe container creation for missing syllabus codes (ON CONFLICT DO UPDATE).
--- 3. Professional color palettes with ZERO duplicates within any programme.
--- 4. Correct Cambridge syllabus codes, names, and verified Lucide icons.
+-- 3. Professional color palettes with ZERO duplicate colors within any programme.
+-- 4. O Level & IGCSE have the exact same roster of 21 subjects with different Cambridge codes.
+-- 5. Includes Psychology in O Level (2090), IGCSE (0990), and A Level (9990).
 -- ==============================================================================
 
 BEGIN;
 
 -- ==============================================================================
--- 1. CAMBRIDGE O LEVEL (17 CANONICAL SUBJECTS)
+-- 1. CAMBRIDGE O LEVEL (21 CANONICAL SUBJECTS)
 -- ==============================================================================
 
--- In-place update on 11 existing O Level subjects
+-- In-place update on existing O Level subjects
 UPDATE public.subjects
 SET 
   name = 'Mathematics',
@@ -38,7 +39,7 @@ SET
   qualification = 'o_level',
   color = '#8B5CF6',
   icon = 'Atom',
-  display_order = 2,
+  display_order = 3,
   enabled = true,
   is_premium = false,
   subscription_tier = 'free',
@@ -47,82 +48,12 @@ WHERE id = '04b0e4e8-5cb2-4692-93e8-9250a3f9f4b3';
 
 UPDATE public.subjects
 SET 
-  name = 'English Language',
-  subject_code = '1123',
-  qualification = 'o_level',
-  color = '#2563EB',
-  icon = 'BookOpen',
-  display_order = 4,
-  enabled = true,
-  is_premium = true,
-  subscription_tier = 'pro',
-  description = COALESCE(description, 'Cambridge O Level English Language (1123)')
-WHERE id = '8082b9e0-36d3-440b-9ca2-6bab67473da6';
-
-UPDATE public.subjects
-SET 
-  name = 'Urdu – First Language',
-  subject_code = '3247',
-  qualification = 'o_level',
-  color = '#EA580C',
-  icon = 'Languages',
-  display_order = 5,
-  enabled = true,
-  is_premium = true,
-  subscription_tier = 'pro',
-  description = COALESCE(description, 'Cambridge O Level Urdu – First Language (3247)')
-WHERE id = 'ccb3187a-65fa-4071-8408-43da8034b90f';
-
-UPDATE public.subjects
-SET 
-  name = 'Urdu – Second Language',
-  subject_code = '3248',
-  qualification = 'o_level',
-  color = '#D97706',
-  icon = 'Languages',
-  display_order = 6,
-  enabled = true,
-  is_premium = true,
-  subscription_tier = 'pro',
-  description = COALESCE(description, 'Cambridge O Level Urdu – Second Language (3248)')
-WHERE id = 'c3d4e5f6-a7b8-9012-cdef-123456789012';
-
-UPDATE public.subjects
-SET 
-  name = 'Islamiyat',
-  subject_code = '2058',
-  qualification = 'o_level',
-  color = '#059669',
-  icon = 'Moon',
-  display_order = 7,
-  enabled = true,
-  is_premium = true,
-  subscription_tier = 'pro',
-  description = COALESCE(description, 'Cambridge O Level Islamiyat (2058)')
-WHERE id = 'b2c3d4e5-f6a7-8901-bcde-f12345678901';
-
-UPDATE public.subjects
-SET 
-  name = 'Pakistan Studies',
-  subject_code = '2059',
-  qualification = 'o_level',
-  color = '#047857',
-  icon = 'Map',
-  display_order = 8,
-  enabled = true,
-  is_premium = true,
-  subscription_tier = 'pro',
-  description = COALESCE(description, 'Cambridge O Level Pakistan Studies (2059)')
-WHERE id = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
-
-UPDATE public.subjects
-SET 
   name = 'Chemistry',
   subject_code = '5070',
   qualification = 'o_level',
   color = '#06B6D4',
   icon = 'FlaskConical',
-  display_order = 9,
+  display_order = 4,
   enabled = true,
   is_premium = true,
   subscription_tier = 'pro',
@@ -136,7 +67,7 @@ SET
   qualification = 'o_level',
   color = '#16A34A',
   icon = 'Dna',
-  display_order = 10,
+  display_order = 5,
   enabled = true,
   is_premium = true,
   subscription_tier = 'pro',
@@ -150,7 +81,7 @@ SET
   qualification = 'o_level',
   color = '#4F46E5',
   icon = 'Code2',
-  display_order = 11,
+  display_order = 7,
   enabled = true,
   is_premium = true,
   subscription_tier = 'pro',
@@ -159,19 +90,89 @@ WHERE id = 'f249052a-6c35-4d36-b9f7-0e1f5bf213a7';
 
 UPDATE public.subjects
 SET 
+  name = 'English – First Language',
+  subject_code = '1123',
+  qualification = 'o_level',
+  color = '#2563EB',
+  icon = 'BookOpen',
+  display_order = 8,
+  enabled = true,
+  is_premium = true,
+  subscription_tier = 'pro',
+  description = COALESCE(description, 'Cambridge O Level English Language (1123)')
+WHERE id = '8082b9e0-36d3-440b-9ca2-6bab67473da6';
+
+UPDATE public.subjects
+SET 
   name = 'Accounting',
   subject_code = '7707',
   qualification = 'o_level',
   color = '#E11D48',
   icon = 'ReceiptText',
-  display_order = 12,
+  display_order = 11,
   enabled = true,
   is_premium = true,
   subscription_tier = 'pro',
   description = COALESCE(description, 'Cambridge O Level Accounting (7707)')
 WHERE id = 'ccbb2c24-2412-4261-8f55-016e33b0909f';
 
--- Insert 6 missing O Level canonical subject containers
+UPDATE public.subjects
+SET 
+  name = 'Islamiyat',
+  subject_code = '2058',
+  qualification = 'o_level',
+  color = '#059669',
+  icon = 'Moon',
+  display_order = 14,
+  enabled = true,
+  is_premium = true,
+  subscription_tier = 'pro',
+  description = COALESCE(description, 'Cambridge O Level Islamiyat (2058)')
+WHERE id = 'b2c3d4e5-f6a7-8901-bcde-f12345678901';
+
+UPDATE public.subjects
+SET 
+  name = 'Pakistan Studies',
+  subject_code = '2059',
+  qualification = 'o_level',
+  color = '#047857',
+  icon = 'Map',
+  display_order = 15,
+  enabled = true,
+  is_premium = true,
+  subscription_tier = 'pro',
+  description = COALESCE(description, 'Cambridge O Level Pakistan Studies (2059)')
+WHERE id = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
+
+UPDATE public.subjects
+SET 
+  name = 'Urdu – First Language',
+  subject_code = '3247',
+  qualification = 'o_level',
+  color = '#EA580C',
+  icon = 'Languages',
+  display_order = 16,
+  enabled = true,
+  is_premium = true,
+  subscription_tier = 'pro',
+  description = COALESCE(description, 'Cambridge O Level Urdu – First Language (3247)')
+WHERE id = 'ccb3187a-65fa-4071-8408-43da8034b90f';
+
+UPDATE public.subjects
+SET 
+  name = 'Urdu – Second Language',
+  subject_code = '3248',
+  qualification = 'o_level',
+  color = '#D97706',
+  icon = 'Languages',
+  display_order = 17,
+  enabled = true,
+  is_premium = true,
+  subscription_tier = 'pro',
+  description = COALESCE(description, 'Cambridge O Level Urdu – Second Language (3248)')
+WHERE id = 'c3d4e5f6-a7b8-9012-cdef-123456789012';
+
+-- Insert missing canonical O Level containers (10 containers)
 INSERT INTO public.subjects (
   id,
   name,
@@ -186,30 +187,56 @@ INSERT INTO public.subjects (
   description
 ) VALUES
   (
-    'b0060417-0000-4000-8000-000000000417',
-    'Information and Communication Technology',
-    '0417',
-    'o_level',
-    '#0284C7',
-    'Monitor',
-    3,
-    true,
-    false,
-    'free',
-    'Cambridge O Level Information & Communication Technology (0417)'
-  ),
-  (
     'b0014037-0000-4000-8000-000000004037',
     'Additional Mathematics',
     '4037',
     'o_level',
     '#7C3AED',
     'Sigma',
-    13,
+    2,
     true,
     true,
     'pro',
     'Cambridge O Level Additional Mathematics (4037)'
+  ),
+  (
+    'b0060417-0000-4000-8000-000000000417',
+    'Information and Communication Technology',
+    '0417',
+    'o_level',
+    '#0284C7',
+    'Monitor',
+    6,
+    true,
+    false,
+    'free',
+    'Cambridge O Level Information & Communication Technology (0417)'
+  ),
+  (
+    'b0071128-0000-4000-8000-000000001128',
+    'English – Second Language',
+    '1128',
+    'o_level',
+    '#38BDF8',
+    'BookOpen',
+    9,
+    true,
+    true,
+    'pro',
+    'Cambridge O Level English – Second Language (1128)'
+  ),
+  (
+    'b0042010-0000-4000-8000-000000002010',
+    'Literature in English',
+    '2010',
+    'o_level',
+    '#BE185D',
+    'BookText',
+    10,
+    true,
+    true,
+    'pro',
+    'Cambridge O Level Literature in English (2010)'
   ),
   (
     'b0022281-0000-4000-8000-000000002281',
@@ -218,7 +245,7 @@ INSERT INTO public.subjects (
     'o_level',
     '#92400E',
     'TrendingUp',
-    14,
+    12,
     true,
     true,
     'pro',
@@ -231,24 +258,11 @@ INSERT INTO public.subjects (
     'o_level',
     '#B45309',
     'BriefcaseBusiness',
-    15,
+    13,
     true,
     true,
     'pro',
     'Cambridge O Level Business Studies (7115)'
-  ),
-  (
-    'b0042010-0000-4000-8000-000000002010',
-    'Literature in English',
-    '2010',
-    'o_level',
-    '#BE185D',
-    'BookText',
-    16,
-    true,
-    true,
-    'pro',
-    'Cambridge O Level Literature in English (2010)'
   ),
   (
     'b0052251-0000-4000-8000-000000002251',
@@ -257,11 +271,50 @@ INSERT INTO public.subjects (
     'o_level',
     '#475569',
     'Users',
-    17,
+    18,
     true,
     true,
     'pro',
     'Cambridge O Level Sociology (2251)'
+  ),
+  (
+    'b0082217-0000-4000-8000-000000002217',
+    'Geography',
+    '2217',
+    'o_level',
+    '#CA8A04',
+    'Globe2',
+    19,
+    true,
+    true,
+    'pro',
+    'Cambridge O Level Geography (2217)'
+  ),
+  (
+    'b0092147-0000-4000-8000-000000002147',
+    'History',
+    '2147',
+    'o_level',
+    '#64748B',
+    'Landmark',
+    20,
+    true,
+    true,
+    'pro',
+    'Cambridge O Level History (2147)'
+  ),
+  (
+    'b0102090-0000-4000-8000-000000002090',
+    'Psychology',
+    '2090',
+    'o_level',
+    '#C026D3',
+    'Brain',
+    21,
+    true,
+    true,
+    'pro',
+    'Cambridge O Level Psychology (2090)'
   )
 ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name,
@@ -277,10 +330,10 @@ ON CONFLICT (id) DO UPDATE SET
 
 
 -- ==============================================================================
--- 2. CAMBRIDGE IGCSE (19 CANONICAL SUBJECTS)
+-- 2. CAMBRIDGE IGCSE (21 CANONICAL SUBJECTS)
 -- ==============================================================================
 
--- In-place update on 10 existing IGCSE subjects
+-- In-place update on existing IGCSE subjects
 UPDATE public.subjects
 SET 
   name = 'Mathematics',
@@ -302,7 +355,7 @@ SET
   qualification = 'igcse',
   color = '#8B5CF6',
   icon = 'Atom',
-  display_order = 2,
+  display_order = 3,
   enabled = true,
   is_premium = false,
   subscription_tier = 'free',
@@ -316,7 +369,7 @@ SET
   qualification = 'igcse',
   color = '#06B6D4',
   icon = 'FlaskConical',
-  display_order = 3,
+  display_order = 4,
   enabled = true,
   is_premium = true,
   subscription_tier = 'pro',
@@ -330,7 +383,7 @@ SET
   qualification = 'igcse',
   color = '#16A34A',
   icon = 'Dna',
-  display_order = 4,
+  display_order = 5,
   enabled = true,
   is_premium = true,
   subscription_tier = 'pro',
@@ -344,7 +397,7 @@ SET
   qualification = 'igcse',
   color = '#0284C7',
   icon = 'Monitor',
-  display_order = 5,
+  display_order = 6,
   enabled = true,
   is_premium = false,
   subscription_tier = 'free',
@@ -358,7 +411,7 @@ SET
   qualification = 'igcse',
   color = '#2563EB',
   icon = 'BookOpen',
-  display_order = 7,
+  display_order = 8,
   enabled = true,
   is_premium = true,
   subscription_tier = 'pro',
@@ -372,7 +425,7 @@ SET
   qualification = 'igcse',
   color = '#38BDF8',
   icon = 'BookOpen',
-  display_order = 8,
+  display_order = 9,
   enabled = true,
   is_premium = true,
   subscription_tier = 'pro',
@@ -386,7 +439,7 @@ SET
   qualification = 'igcse',
   color = '#BE185D',
   icon = 'BookText',
-  display_order = 9,
+  display_order = 10,
   enabled = true,
   is_premium = true,
   subscription_tier = 'pro',
@@ -400,7 +453,7 @@ SET
   qualification = 'igcse',
   color = '#E11D48',
   icon = 'ReceiptText',
-  display_order = 10,
+  display_order = 11,
   enabled = true,
   is_premium = true,
   subscription_tier = 'pro',
@@ -414,14 +467,14 @@ SET
   qualification = 'igcse',
   color = '#D97706',
   icon = 'Languages',
-  display_order = 13,
+  display_order = 17,
   enabled = true,
   is_premium = true,
   subscription_tier = 'pro',
   description = COALESCE(description, 'Cambridge IGCSE Urdu – Second Language (0539)')
 WHERE id = '8e378b20-ced7-4b89-9b85-d5e34ed012a7';
 
--- Insert 9 missing IGCSE canonical subject containers
+-- Insert missing canonical IGCSE containers (11 containers)
 INSERT INTO public.subjects (
   id,
   name,
@@ -436,13 +489,26 @@ INSERT INTO public.subjects (
   description
 ) VALUES
   (
+    'c0040606-0000-4000-8000-000000000606',
+    'Additional Mathematics',
+    '0606',
+    'igcse',
+    '#7C3AED',
+    'Sigma',
+    2,
+    true,
+    true,
+    'pro',
+    'Cambridge IGCSE Additional Mathematics (0606)'
+  ),
+  (
     'c0010478-0000-4000-8000-000000000478',
     'Computer Science',
     '0478',
     'igcse',
     '#4F46E5',
     'Code2',
-    6,
+    7,
     true,
     true,
     'pro',
@@ -455,7 +521,7 @@ INSERT INTO public.subjects (
     'igcse',
     '#92400E',
     'TrendingUp',
-    11,
+    12,
     true,
     true,
     'pro',
@@ -468,37 +534,11 @@ INSERT INTO public.subjects (
     'igcse',
     '#B45309',
     'BriefcaseBusiness',
-    12,
+    13,
     true,
     true,
     'pro',
     'Cambridge IGCSE Business Studies (0450)'
-  ),
-  (
-    'c0040606-0000-4000-8000-000000000606',
-    'Additional Mathematics',
-    '0606',
-    'igcse',
-    '#7C3AED',
-    'Sigma',
-    14,
-    true,
-    true,
-    'pro',
-    'Cambridge IGCSE Additional Mathematics (0606)'
-  ),
-  (
-    'c0050495-0000-4000-8000-000000000495',
-    'Sociology',
-    '0495',
-    'igcse',
-    '#475569',
-    'Users',
-    15,
-    true,
-    true,
-    'pro',
-    'Cambridge IGCSE Sociology (0495)'
   ),
   (
     'c0060493-0000-4000-8000-000000000493',
@@ -507,7 +547,7 @@ INSERT INTO public.subjects (
     'igcse',
     '#059669',
     'Moon',
-    16,
+    14,
     true,
     true,
     'pro',
@@ -520,11 +560,37 @@ INSERT INTO public.subjects (
     'igcse',
     '#047857',
     'Map',
-    17,
+    15,
     true,
     true,
     'pro',
     'Cambridge IGCSE Pakistan Studies (0448)'
+  ),
+  (
+    'c0100538-0000-4000-8000-000000000538',
+    'Urdu – First Language',
+    '0538',
+    'igcse',
+    '#EA580C',
+    'Languages',
+    16,
+    true,
+    true,
+    'pro',
+    'Cambridge IGCSE Urdu – First Language (0538)'
+  ),
+  (
+    'c0050495-0000-4000-8000-000000000495',
+    'Sociology',
+    '0495',
+    'igcse',
+    '#475569',
+    'Users',
+    18,
+    true,
+    true,
+    'pro',
+    'Cambridge IGCSE Sociology (0495)'
   ),
   (
     'c0080460-0000-4000-8000-000000000460',
@@ -533,7 +599,7 @@ INSERT INTO public.subjects (
     'igcse',
     '#CA8A04',
     'Globe2',
-    18,
+    19,
     true,
     true,
     'pro',
@@ -546,11 +612,24 @@ INSERT INTO public.subjects (
     'igcse',
     '#64748B',
     'Landmark',
-    19,
+    20,
     true,
     true,
     'pro',
     'Cambridge IGCSE History (0470)'
+  ),
+  (
+    'c0110990-0000-4000-8000-000000000990',
+    'Psychology',
+    '0990',
+    'igcse',
+    '#C026D3',
+    'Brain',
+    21,
+    true,
+    true,
+    'pro',
+    'Cambridge IGCSE Psychology (0990)'
   )
 ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name,
@@ -569,7 +648,7 @@ ON CONFLICT (id) DO UPDATE SET
 -- 3. CAMBRIDGE A LEVEL (18 CANONICAL SUBJECTS)
 -- ==============================================================================
 
--- In-place update on 9 existing A Level subjects
+-- In-place update on existing A Level subjects
 UPDATE public.subjects
 SET
   name = 'English Language',
@@ -687,7 +766,7 @@ SET
 WHERE id = '6f6f7168-3169-45e5-9cd0-1903901e7bbd'
    OR (subject_code = '9990' AND qualification = 'a_level');
 
--- Insert 9 missing A Level canonical subject containers
+-- Insert missing canonical A Level containers (9 containers)
 INSERT INTO public.subjects (
   id,
   name,
