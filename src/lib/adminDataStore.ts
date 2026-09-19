@@ -175,6 +175,16 @@ class AdminDataStore {
     }
   }
 
+  public subscribe(callback: (type?: string) => void): () => void {
+    if (typeof window === "undefined") return () => {};
+    const handler = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      callback(customEvent.detail?.type);
+    };
+    window.addEventListener("levelhub:admin_data_updated", handler);
+    return () => window.removeEventListener("levelhub:admin_data_updated", handler);
+  }
+
   // --- LESSONS ---
   public saveLesson(id: string, changes: Partial<StoredLesson>) {
     this.state.lessons[id] = {
@@ -327,16 +337,33 @@ class AdminDataStore {
       .map((s) => {
         const override = this.state.subjects[s.id];
         let base = { ...s };
-        // Check canonical A Level alignment
-        const canon = CANONICAL_A_LEVEL_SUBJECTS.find(
-          c => c.id === s.id || (s.subject_code && s.subject_code.trim() === c.code && (s.qualification === 'a_level' || !s.qualification))
-        );
+        const sQual = (s.qualification || '').toLowerCase();
+
+        // Check canonical alignment across all programmes
+        const canonA = (sQual === 'a_level' || !sQual)
+          ? CANONICAL_A_LEVEL_SUBJECTS.find(
+              c => c.id === s.id || (s.subject_code && s.subject_code.trim() === c.code)
+            )
+          : undefined;
+
+        const canonO = (sQual === 'o_level' || sQual === 'both')
+          ? CANONICAL_O_LEVEL_SUBJECTS.find(
+              c => c.id === s.id || (s.subject_code && s.subject_code.trim() === c.code)
+            )
+          : undefined;
+
+        const canonI = (sQual === 'igcse' || sQual === 'both')
+          ? CANONICAL_IGCSE_SUBJECTS.find(
+              c => c.id === s.id || (s.subject_code && s.subject_code.trim() === c.code)
+            )
+          : undefined;
+
+        const canon = canonA || canonO || canonI;
         if (canon) {
           base = {
             ...base,
             name: canon.name,
             subject_code: canon.code,
-            qualification: 'a_level',
             color: canon.hex,
             icon: canon.icon,
             display_order: canon.order,

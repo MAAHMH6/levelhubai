@@ -5,6 +5,7 @@ import { featureStorage } from '@/integrations/supabase/featureClient';
 import { CANONICAL_A_LEVEL_SUBJECTS } from '@/lib/canonicalALevelSubjects';
 import { CANONICAL_O_LEVEL_SUBJECTS } from '@/lib/canonicalOLevelSubjects';
 import { CANONICAL_IGCSE_SUBJECTS } from '@/lib/canonicalIGCSESubjects';
+import { adminDataStore } from '@/lib/adminDataStore';
 
 export type ProgrammeType = 'o_level' | 'igcse' | 'a_level';
 
@@ -284,27 +285,32 @@ export const getSubjectBrandColor = (name: string, fallbackColor?: string): stri
 };
 
 export const isFreeCambridgeSubject = (name: string, programme?: ProgrammeType): boolean => {
-  const lower = name.toLowerCase().trim();
-  // Core free subjects — always free regardless of programme
-  const FREE_CORE = ['mathematics', 'physics', 'ict'];
-  const isCoreMatch = FREE_CORE.some(core => lower === core || lower.startsWith(core + ' ') || lower.endsWith(' ' + core));
-  if (isCoreMatch) return true;
-  
-  if (programme === 'igcse') {
-    // IGCSE-specific free variants
-    if (lower.includes('mathematics') && (lower.includes('igcse') || lower === 'mathematics')) return true;
-    if (lower.includes('physics') && (lower.includes('igcse') || lower === 'physics')) return true;
-    if (lower.includes('ict') && (lower.includes('igcse') || lower === 'ict')) return true;
-    return false;
-  }
-  if (programme === 'a_level') {
-    if (lower.includes('mathematics') || lower.includes('physics') || lower.includes('ict') || lower.includes('computer science')) return true;
-    return false;
-  }
-  if (programme === 'o_level') {
-    if (lower.includes('mathematics') || lower.includes('physics') || lower.includes('ict')) return true;
-    return false;
-  }
+  const lower = (name || '').toLowerCase().trim();
+  // EXCLUDE Additional Mathematics and Further Mathematics from free core!
+  if (lower.includes('additional') || lower.includes('further')) return false;
+
+  // Exact core free matches across Cambridge programmes
+  if (
+    lower === 'mathematics' || 
+    lower === 'mathematics igcse' || 
+    lower === 'mathematics olevel' || 
+    lower === 'mathematics a-level'
+  ) return true;
+
+  if (
+    lower === 'physics' || 
+    lower === 'physics igcse' || 
+    lower === 'physics olevel' || 
+    lower === 'physics a-level'
+  ) return true;
+
+  if (
+    lower === 'information and communication technology' || 
+    lower === 'ict' || 
+    lower === 'ict igcse' || 
+    lower === 'ict olevel'
+  ) return true;
+
   return false;
 };
 
@@ -367,7 +373,7 @@ export const StudentProgrammeProvider: React.FC<{ children: React.ReactNode }> =
     loadProfile();
   }, [user]);
 
-  // Fetch subjects from authoritative database
+  // Fetch subjects from authoritative database with instant admin override sync
   useEffect(() => {
     const fetchSubjects = async () => {
       try {
@@ -377,14 +383,21 @@ export const StudentProgrammeProvider: React.FC<{ children: React.ReactNode }> =
           .order('display_order', { ascending: true })
           .order('name', { ascending: true });
 
-        if (!error && data && data.length > 0) {
-          setRawSubjects(data);
-        }
+        const base = (!error && data && data.length > 0) ? data : [];
+        setRawSubjects(adminDataStore.applySubjectOverrides(base));
       } catch (err) {
         console.error('Error reading subjects from database:', err);
+        setRawSubjects(adminDataStore.applySubjectOverrides([]));
       }
     };
     fetchSubjects();
+
+    const unsub = adminDataStore.subscribe((type) => {
+      if (!type || type === 'subjects') {
+        fetchSubjects();
+      }
+    });
+    return () => unsub();
   }, []);
 
   // Fetch real student lesson progress & quiz stats per subject from Supabase
@@ -488,168 +501,56 @@ export const StudentProgrammeProvider: React.FC<{ children: React.ReactNode }> =
     loadUserProgress();
   }, [user?.id]);
 
-  // Filter subjects strictly according to student's selected programme
-  // Filter subjects strictly according to student's selected programme
+  // Filter subjects strictly according to student's selected programme with strict admin Pro/Free and visibility controls
   const programmeSubjects: SubjectItem[] = useMemo(() => {
     const prog = profile.programme;
-    
-    // Merge database subjects with canonical fallback catalogue so all canonical reconciled subjects exist
-    const sourceList = (() => {
-      const dbList = rawSubjects && rawSubjects.length > 0 ? rawSubjects : [];
-      const merged = [...dbList];
-      ALL_FALLBACK_SUBJECTS.forEach(fallback => {
-        const exists = merged.some(s => 
-          s.id === fallback.id || 
-          (s.subject_code && fallback.subject_code && s.subject_code.trim() === fallback.subject_code.trim())
-        );
-        if (!exists) {
-          merged.push(fallback);
-        }
-      });
-      return merged;
-    })();
 
-    const filtered = sourceList.filter(subj => {
-      // Exclude disabled subjects if enabled flag is explicitly false
-      if (subj.enabled === false) return false;
+    // Determine canonical list for active programme
+    const canonicalList =
+      prog === 'o_level' ? CANONICAL_O_LEVEL_SUBJECTS :
+      prog === 'igcse' ? CANONICAL_IGCSE_SUBJECTS :
+      CANONICAL_A_LEVEL_SUBJECTS;
 
-      const q = (subj.qualification || '').toLowerCase();
-      const n = (subj.name || '').toLowerCase();
+    const matchedDbIds = new Set<string>();
 
-      if (prog === 'igcse') {
-        if (q === 'igcse' || n.includes('igcse')) return true;
-        if (q === 'both') {
-          // Exclude generic 'both' if an IGCSE-specific version exists (e.g. Mathematics IGCSE vs Mathematics)
-          const baseName = n.split(' ')[0];
-          const hasSpecific = sourceList.some(s => 
-            (s.qualification?.toLowerCase() === 'igcse' || s.name?.toLowerCase().includes('igcse')) &&
-            s.name?.toLowerCase().startsWith(baseName)
-          );
-          return !hasSpecific;
-        }
-        return false;
+    const canonicalMapped: (SubjectItem | null)[] = canonicalList.map((spec) => {
+      // Find matching subject from rawSubjects (with admin overrides already applied)
+      const dbMatch = rawSubjects.find(
+        (s) =>
+          s.id === spec.id ||
+          (s.subject_code && s.subject_code.trim() === spec.code && (s.qualification === prog || s.qualification === 'both')) ||
+          (s.name && s.name.toLowerCase() === spec.name.toLowerCase() && (s.qualification === prog || s.qualification === 'both'))
+      );
+
+      if (dbMatch) {
+        matchedDbIds.add(dbMatch.id);
       }
 
-      if (prog === 'o_level') {
-        if (q === 'o_level' || n.includes('olevel') || n.includes('o level')) return true;
-        if (q === 'both') {
-          const baseName = n.split(' ')[0];
-          const hasSpecific = sourceList.some(s => 
-            (s.qualification?.toLowerCase() === 'o_level' || s.name?.toLowerCase().includes('olevel')) &&
-            s.name?.toLowerCase().startsWith(baseName)
-          );
-          return !hasSpecific;
-        }
-        return false;
+      // Check admin visibility: if explicitly disabled by admin, hide it
+      const isEnabled = dbMatch?.enabled !== undefined ? dbMatch.enabled !== false : true;
+      if (!isEnabled) {
+        return null;
       }
 
-      if (prog === 'a_level') {
-        if (q === 'a_level' || n.includes('a-level') || n.includes('a level')) return true;
-        if (q === 'both') {
-          const baseName = n.split(' ')[0];
-          const hasSpecific = sourceList.some(s => 
-            (s.qualification?.toLowerCase() === 'a_level' || s.name?.toLowerCase().includes('a-level') || s.name?.toLowerCase().includes('a level')) &&
-            s.name?.toLowerCase().startsWith(baseName)
-          );
-          return !hasSpecific;
-        }
-        return false;
+      // Pro / Non-pro priority:
+      // 1. Admin explicit override / database setting takes absolute precedence
+      let isFree: boolean;
+      if (dbMatch?.subscription_tier !== undefined && dbMatch.subscription_tier !== null) {
+        isFree = dbMatch.subscription_tier === 'free';
+      } else if (dbMatch?.is_premium !== undefined && dbMatch.is_premium !== null) {
+        isFree = !dbMatch.is_premium;
+      } else {
+        // 2. Canonical default tier (Mathematics, Physics, ICT are free core; Additional Mathematics is NEVER free core)
+        isFree = isFreeCambridgeSubject(spec.name, prog);
       }
 
-      return false;
-    });
+      const activeId = dbMatch?.id || spec.id;
+      const brandColor = (dbMatch?.color && dbMatch.color.startsWith('#')) ? dbMatch.color : spec.hex;
+      const icon = (dbMatch?.icon && dbMatch.icon.length > 2) ? dbMatch.icon : spec.icon;
+      const displayOrder = dbMatch?.display_order ?? spec.order;
+      const description = dbMatch?.description || spec.description;
 
-    return filtered.map(subj => {
-      const cleanName = (subj.name || '').trim().toLowerCase();
-      // Authoritative database subject_code first, fallback to standard map
-      let code = (subj.subject_code ? subj.subject_code.trim() : null) || SYLLABUS_CODES[cleanName] || 'Syllabus';
-      let name = subj.name;
-
-      let icon = subj.icon || 'BookOpen';
-      let displayOrder = subj.display_order ?? 999;
-      let brandColor = subj.color && subj.color.startsWith('#')
-        ? subj.color
-        : getSubjectBrandColor(name, subj.color);
-
-      if (prog === 'o_level') {
-        const canonical = CANONICAL_O_LEVEL_SUBJECTS.find(c =>
-          c.code === (subj.subject_code ? subj.subject_code.trim() : '') ||
-          c.id === subj.id ||
-          c.name.toLowerCase() === cleanName ||
-          cleanName.includes(c.name.toLowerCase()) ||
-          c.name.toLowerCase().includes(cleanName)
-        );
-
-        if (canonical) {
-          name = canonical.name;
-          code = canonical.code;
-          displayOrder = canonical.order;
-          if (!subj.color || !subj.color.startsWith('#') || subj.color.startsWith('hsl')) {
-            brandColor = canonical.hex;
-          } else {
-            brandColor = subj.color;
-          }
-          if (!subj.icon || subj.icon.length <= 2 || subj.icon === 'Calculator' || subj.icon === 'BookOpen') {
-            icon = canonical.icon;
-          } else {
-            icon = subj.icon;
-          }
-        }
-      } else if (prog === 'igcse') {
-        const canonical = CANONICAL_IGCSE_SUBJECTS.find(c =>
-          c.code === (subj.subject_code ? subj.subject_code.trim() : '') ||
-          c.id === subj.id ||
-          c.name.toLowerCase() === cleanName ||
-          cleanName.includes(c.name.toLowerCase()) ||
-          c.name.toLowerCase().includes(cleanName)
-        );
-
-        if (canonical) {
-          name = canonical.name;
-          code = canonical.code;
-          displayOrder = canonical.order;
-          if (!subj.color || !subj.color.startsWith('#') || subj.color.startsWith('hsl')) {
-            brandColor = canonical.hex;
-          } else {
-            brandColor = subj.color;
-          }
-          if (!subj.icon || subj.icon.length <= 2 || subj.icon === 'Calculator' || subj.icon === 'BookOpen') {
-            icon = canonical.icon;
-          } else {
-            icon = subj.icon;
-          }
-        }
-      } else if (prog === 'a_level') {
-        const canonical = CANONICAL_A_LEVEL_SUBJECTS.find(c =>
-          c.code === (subj.subject_code ? subj.subject_code.trim() : '') ||
-          c.id === subj.id ||
-          c.name.toLowerCase() === cleanName ||
-          cleanName.includes(c.name.toLowerCase()) ||
-          c.name.toLowerCase().includes(cleanName)
-        );
-
-        if (canonical) {
-          name = canonical.name;
-          code = canonical.code;
-          displayOrder = canonical.order;
-          if (!subj.color || !subj.color.startsWith('#') || subj.color.startsWith('hsl')) {
-            brandColor = canonical.hex;
-          } else {
-            brandColor = subj.color;
-          }
-          if (!subj.icon || subj.icon.length <= 2 || subj.icon === 'Calculator' || subj.icon === 'BookOpen') {
-            icon = canonical.icon;
-          } else {
-            icon = subj.icon;
-          }
-        }
-      }
-
-      const isFree = subj.is_premium === false || subj.subscription_tier === 'free' || isFreeCambridgeSubject(name, prog);
-      const isCore = isFree;
-
-      // Real student stats — NO mock hash values
-      const userStat = userSubjectStats[subj.id];
+      const userStat = userSubjectStats[activeId];
       const completedTopics = userStat?.completedLessons || 0;
       const totalTopics = userStat?.totalLessons || 0;
       const progressPercent = totalTopics > 0 ? Math.min(100, Math.round((completedTopics / totalTopics) * 100)) : 0;
@@ -657,21 +558,21 @@ export const StudentProgrammeProvider: React.FC<{ children: React.ReactNode }> =
       const studyTimeHours = userStat?.studyTimeHours || 0;
 
       return {
-        id: subj.id,
-        name,
-        short_name: subj.short_name || name,
-        slug: subj.slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
-        syllabusCode: code,
-        subject_code: code,
-        qualification: subj.qualification,
-        qualification_variant: subj.qualification_variant || null,
-        exam_board: subj.exam_board || 'cambridge',
+        id: activeId,
+        name: spec.name,
+        short_name: spec.name,
+        slug: spec.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+        syllabusCode: spec.code,
+        subject_code: spec.code,
+        qualification: prog,
+        qualification_variant: null,
+        exam_board: 'cambridge',
         icon,
         color: brandColor,
-        description: subj.description || '',
+        description,
         subscription_tier: isFree ? 'free' : 'pro',
         is_premium: !isFree,
-        enabled: subj.enabled !== false,
+        enabled: true,
         display_order: displayOrder,
         progressPercent,
         totalTopics,
@@ -681,12 +582,57 @@ export const StudentProgrammeProvider: React.FC<{ children: React.ReactNode }> =
         strongTopics: [],
         studyTimeHours,
         streakDays: profile.streakDays,
-        isCore,
+        isCore: isFree,
       };
     });
 
-    mapped.sort((a, b) => (a.display_order ?? 999) - (b.display_order ?? 999));
-    return mapped;
+    // Also include any custom subjects created by admin in this qualification that are not part of canonical list
+    const customSubjects: SubjectItem[] = rawSubjects
+      .filter((s) => {
+        if (matchedDbIds.has(s.id)) return false;
+        if (s.enabled === false) return false;
+        const q = (s.qualification || '').toLowerCase();
+        return q === prog || q === 'both';
+      })
+      .map((s) => {
+        const isFree = s.subscription_tier !== undefined ? s.subscription_tier === 'free' : (s.is_premium === false);
+        const userStat = userSubjectStats[s.id];
+        const completedTopics = userStat?.completedLessons || 0;
+        const totalTopics = userStat?.totalLessons || 0;
+        const progressPercent = totalTopics > 0 ? Math.min(100, Math.round((completedTopics / totalTopics) * 100)) : 0;
+
+        return {
+          id: s.id,
+          name: s.name,
+          short_name: s.name,
+          slug: s.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+          syllabusCode: s.subject_code || '',
+          subject_code: s.subject_code || '',
+          qualification: s.qualification || prog,
+          qualification_variant: null,
+          exam_board: 'cambridge',
+          icon: s.icon || 'BookOpen',
+          color: s.color || '#00B4B6',
+          description: s.description || '',
+          subscription_tier: isFree ? 'free' : 'pro',
+          is_premium: !isFree,
+          enabled: true,
+          display_order: s.display_order ?? 999,
+          progressPercent,
+          totalTopics,
+          completedTopics,
+          accuracy: userStat?.quizAccuracy || 0,
+          weakTopics: [],
+          strongTopics: [],
+          studyTimeHours: userStat?.studyTimeHours || 0,
+          streakDays: profile.streakDays,
+          isCore: isFree,
+        };
+      });
+
+    const combined = canonicalMapped.filter((s): s is SubjectItem => s !== null).concat(customSubjects);
+    combined.sort((a, b) => (a.display_order ?? 999) - (b.display_order ?? 999));
+    return combined;
   }, [rawSubjects, profile.programme, profile.streakDays, userSubjectStats]);
 
   const coreSubjects = useMemo(() => {
