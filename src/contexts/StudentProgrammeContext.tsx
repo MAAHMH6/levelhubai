@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useMemo } from '
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { featureStorage } from '@/integrations/supabase/featureClient';
+import { CANONICAL_A_LEVEL_SUBJECTS } from '@/lib/canonicalALevelSubjects';
 
 export type ProgrammeType = 'o_level' | 'igcse' | 'a_level';
 
@@ -146,19 +147,59 @@ const SYLLABUS_CODES: Record<string, string> = {
   'accounting igcse': '0452',
   'urdu second lang igcse': '0539',
 
-  // A Level Variants
+  // A Level Canonical Codes (18 Subjects)
+  'english language': '9093',
+  'english language a-level': '9093',
   'mathematics a-level': '9709',
-  'physics a-level': '9702',
+  'urdu a-level': '9686',
+  'urdu': '9686',
   'chemistry a-level': '9701',
+  'physics a-level': '9702',
   'biology a-level': '9700',
-  'computer science a-level': '9618',
+  'further mathematics': '9231',
+  'further mathematics a-level': '9231',
+  'economics a-level': '9708',
+  'business a-level': '9609',
   'business': '9609',
+  'literature in english a-level': '9695',
+  'sociology a-level': '9699',
+  'information technology a-level': '9626',
+  'computer science a-level': '9618',
+  'accounting a-level': '9706',
+  'psychology a-level': '9990',
   'psychology': '9990',
+  'geography a-level': '9696',
+  'geography': '9696',
+  'history a-level': '9489',
+  'history': '9489',
+  'global perspectives & research': '9239',
+  'global perspectives & research a-level': '9239',
 };
 
 export const CAMBRIDGE_SUBJECT_COLORS: Record<string, string> = {
+  // A Level Canonical Hex Colors
+  'english language a-level': '#2563EB',
+  'mathematics a-level': '#7C3AED',
+  'urdu a-level': '#EA580C',
+  'chemistry a-level': '#DB2777',
+  'physics a-level': '#0891B2',
+  'biology a-level': '#16A34A',
+  'further mathematics': '#9333EA',
+  'further mathematics a-level': '#9333EA',
+  'economics a-level': '#92400E',
+  'business a-level': '#4F46E5',
+  'literature in english a-level': '#E11D48',
+  'sociology a-level': '#475569',
+  'information technology a-level': '#0F766E',
+  'computer science a-level': '#334155',
+  'accounting a-level': '#65A30D',
+  'psychology a-level': '#C026D3',
+  'geography a-level': '#CA8A04',
+  'history a-level': '#64748B',
+  'global perspectives & research': '#0D9488',
+  'global perspectives & research a-level': '#0D9488',
+
   'mathematics': '#0D9488', // Teal
-  'mathematics a-level': '#14B8A6', // Teal Green
   'mathematics igcse': '#0F766E', // Deep Teal
   'physics': '#8B5CF6', // Purple
   'physics igcse': '#7C3AED', // Deep Violet
@@ -209,26 +250,29 @@ export const ALL_FALLBACK_SUBJECTS = [
   { id: "f249052a-6c35-4d36-b9f7-0e1f5bf213a7", name: "Computer Science", subject_code: "2210", qualification: "o_level", subscription_tier: "pro" },
   { id: "ccbb2c24-2412-4261-8f55-016e33b0909f", name: "Accounting", subject_code: "7707", qualification: "o_level", subscription_tier: "pro" },
 
-  // A Level & IGCSE Subjects for Cross-Programme Integrity
-  { id: "2cd03c2d-ab10-4472-a8d3-1b7ed2159bda", name: "Accounting", subject_code: "9706", qualification: "a_level", subscription_tier: "pro" },
+  // Canonical IGCSE Subjects
   { id: "00580068-5b7f-4b63-b338-3f44020820ff", name: "Accounting IGCSE", subject_code: "0452", qualification: "igcse", subscription_tier: "pro" },
-  { id: "f93edc3c-182a-4b5b-b7f1-390e9cd284e5", name: "Biology", subject_code: "9700", qualification: "a_level", subscription_tier: "pro" },
   { id: "454404df-eaf0-4405-9555-0981813d14a1", name: "Biology IGCSE", subject_code: "0610", qualification: "igcse", subscription_tier: "pro" },
-  { id: "3266c995-2e38-4fff-a404-79e00482d656", name: "Business", subject_code: "9609", qualification: "a_level", subscription_tier: "pro" },
-  { id: "f478bfd2-4cf0-4149-998e-ef75db3e96e0", name: "Chemistry", subject_code: "9701", qualification: "a_level", subscription_tier: "pro" },
   { id: "51ab1b5d-e371-487d-a795-b8e7a4915eb7", name: "Chemistry IGCSE", subject_code: "0620", qualification: "igcse", subscription_tier: "pro" },
-  { id: "795b7c8e-1a5f-4032-baca-52ee79fc89b8", name: "Computer Science", subject_code: "9618", qualification: "a_level", subscription_tier: "pro" },
-  { id: "14f9c0c5-3110-4387-8702-8e6eed4b7d06", name: "Economics", subject_code: "9708", qualification: "a_level", subscription_tier: "pro" },
   { id: "665ca56f-3f48-4b97-83bb-0dbaf926f712", name: "English IGCSE First Lang", subject_code: "0500", qualification: "igcse", subscription_tier: "pro" },
   { id: "9e8f8d13-8678-4fac-9ed2-e99470ed57d2", name: "English IGCSE Literature", subject_code: "0475", qualification: "igcse", subscription_tier: "pro" },
   { id: "1e9c3949-21d7-479a-8cce-e692d19ac2f8", name: "English IGCSE Second Lang", subject_code: "0510", qualification: "igcse", subscription_tier: "pro" },
-  { id: "d203f997-be7c-4ad7-9047-dcc4fa72e77c", name: "English Language", subject_code: "9093", qualification: "a_level", subscription_tier: "pro" },
   { id: "5f97d9a6-f176-4d79-8a4c-2a859881a6a1", name: "ICT IGCSE", subject_code: "0417", qualification: "igcse", subscription_tier: "pro" },
-  { id: "9d2b51bd-9c97-4417-9043-cdb30d0b6f5d", name: "Mathematics A-Level", subject_code: "9709", qualification: "a_level", subscription_tier: "free" },
   { id: "f8899927-c4b4-4b0f-bc0c-87220b75df16", name: "Mathematics IGCSE", subject_code: "0580", qualification: "igcse", subscription_tier: "pro" },
   { id: "c2f640a2-f25b-4cc9-8f95-144913b51254", name: "Physics IGCSE", subject_code: "0625", qualification: "igcse", subscription_tier: "pro" },
-  { id: "6f6f7168-3169-45e5-9cd0-1903901e7bbd", name: "Psychology", subject_code: "9990", qualification: "a_level", subscription_tier: "pro" },
-  { id: "8e378b20-ced7-4b89-9b85-d5e34ed012a7", name: "Urdu Second Lang IGCSE", subject_code: "0539", qualification: "igcse", subscription_tier: "pro" }
+  { id: "8e378b20-ced7-4b89-9b85-d5e34ed012a7", name: "Urdu Second Lang IGCSE", subject_code: "0539", qualification: "igcse", subscription_tier: "pro" },
+
+  // Canonical 18 A Level Subjects
+  ...CANONICAL_A_LEVEL_SUBJECTS.map(s => ({
+    id: s.id,
+    name: s.name,
+    subject_code: s.code,
+    qualification: "a_level",
+    subscription_tier: s.code === "9709" ? "free" : "pro",
+    color: s.hex,
+    icon: s.icon,
+    display_order: s.order,
+  })),
 ];
 
 export const getSubjectBrandColor = (name: string, fallbackColor?: string): string => {
@@ -563,7 +607,38 @@ export const StudentProgrammeProvider: React.FC<{ children: React.ReactNode }> =
         }
       }
 
-      const brandColor = getSubjectBrandColor(name, subj.color);
+      let icon = subj.icon || 'BookOpen';
+      let displayOrder = subj.display_order ?? 999;
+      let brandColor = subj.color && subj.color.startsWith('#')
+        ? subj.color
+        : getSubjectBrandColor(name, subj.color);
+
+      if (prog === 'a_level') {
+        const canonical = CANONICAL_A_LEVEL_SUBJECTS.find(c =>
+          c.code === (subj.subject_code ? subj.subject_code.trim() : '') ||
+          c.id === subj.id ||
+          c.name.toLowerCase() === cleanName ||
+          cleanName.includes(c.name.toLowerCase()) ||
+          c.name.toLowerCase().includes(cleanName)
+        );
+
+        if (canonical) {
+          name = canonical.name;
+          code = canonical.code;
+          displayOrder = canonical.order;
+          if (!subj.color || !subj.color.startsWith('#') || subj.color.startsWith('hsl')) {
+            brandColor = canonical.hex;
+          } else {
+            brandColor = subj.color;
+          }
+          if (!subj.icon || subj.icon.length <= 2 || subj.icon === 'Calculator' || subj.icon === 'BookOpen') {
+            icon = canonical.icon;
+          } else {
+            icon = subj.icon;
+          }
+        }
+      }
+
       const isFree = subj.is_premium === false || subj.subscription_tier === 'free' || isFreeCambridgeSubject(name, prog);
       const isCore = isFree;
 
@@ -585,13 +660,13 @@ export const StudentProgrammeProvider: React.FC<{ children: React.ReactNode }> =
         qualification: subj.qualification,
         qualification_variant: subj.qualification_variant || null,
         exam_board: subj.exam_board || 'cambridge',
-        icon: subj.icon || 'BookOpen',
+        icon,
         color: brandColor,
         description: subj.description || '',
         subscription_tier: isFree ? 'free' : 'pro',
         is_premium: !isFree,
         enabled: subj.enabled !== false,
-        display_order: subj.display_order ?? 999,
+        display_order: displayOrder,
         progressPercent,
         totalTopics,
         completedTopics,
@@ -603,6 +678,9 @@ export const StudentProgrammeProvider: React.FC<{ children: React.ReactNode }> =
         isCore,
       };
     });
+
+    mapped.sort((a, b) => (a.display_order ?? 999) - (b.display_order ?? 999));
+    return mapped;
   }, [rawSubjects, profile.programme, profile.streakDays, userSubjectStats]);
 
   const coreSubjects = useMemo(() => {
@@ -729,13 +807,13 @@ export const StudentProgrammeProvider: React.FC<{ children: React.ReactNode }> =
         qualification: fallback.qualification,
         qualification_variant: null,
         exam_board: 'cambridge',
-        icon: 'BookOpen',
-        color: getSubjectBrandColor(fallback.name),
+        icon: (fallback as any).icon || 'BookOpen',
+        color: (fallback as any).color || getSubjectBrandColor(fallback.name),
         description: '',
         subscription_tier: isFree ? 'free' : (fallback.subscription_tier || 'pro'),
         is_premium: !isFree,
         enabled: true,
-        display_order: 999,
+        display_order: (fallback as any).display_order ?? 999,
         progressPercent: 0,
         totalTopics: 0,
         completedTopics: 0,
@@ -821,13 +899,13 @@ export const StudentProgrammeProvider: React.FC<{ children: React.ReactNode }> =
         qualification: fallback.qualification,
         qualification_variant: null,
         exam_board: 'cambridge',
-        icon: 'BookOpen',
-        color: getSubjectBrandColor(fallback.name),
+        icon: (fallback as any).icon || 'BookOpen',
+        color: (fallback as any).color || getSubjectBrandColor(fallback.name),
         description: '',
         subscription_tier: isFree ? 'free' : (fallback.subscription_tier || 'pro'),
         is_premium: !isFree,
         enabled: true,
-        display_order: 999,
+        display_order: (fallback as any).display_order ?? 999,
         progressPercent: 0,
         totalTopics: 0,
         completedTopics: 0,

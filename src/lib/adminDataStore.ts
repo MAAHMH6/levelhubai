@@ -4,6 +4,8 @@
  * and graceful fallback for Supabase RLS restrictions on admin actions.
  */
 
+import { CANONICAL_A_LEVEL_SUBJECTS } from "./canonicalALevelSubjects";
+
 export interface StoredLesson {
   id: string;
   title: string;
@@ -316,13 +318,29 @@ class AdminDataStore {
     this.dispatchEvents("subjects");
   }
 
-  public applySubjectOverrides<T extends { id: string; name?: string }>(subjects: T[]): T[] {
+  public applySubjectOverrides<T extends { id: string; name?: string; subject_code?: string | null; qualification?: string | null; color?: string | null; icon?: string | null; display_order?: number | null }>(subjects: T[]): T[] {
     const deletedSet = new Set(this.state.deletedSubjectIds);
     let result = subjects
       .filter((s) => !deletedSet.has(s.id))
       .map((s) => {
         const override = this.state.subjects[s.id];
-        return override ? ({ ...s, ...override } as T) : s;
+        let base = { ...s };
+        // Check canonical A Level alignment
+        const canon = CANONICAL_A_LEVEL_SUBJECTS.find(
+          c => c.id === s.id || (s.subject_code && s.subject_code.trim() === c.code && (s.qualification === 'a_level' || !s.qualification))
+        );
+        if (canon) {
+          base = {
+            ...base,
+            name: canon.name,
+            subject_code: canon.code,
+            qualification: 'a_level',
+            color: canon.hex,
+            icon: canon.icon,
+            display_order: canon.order,
+          };
+        }
+        return override ? ({ ...base, ...override } as T) : (base as T);
       });
 
     const created = this.state.createdSubjects
@@ -333,6 +351,31 @@ class AdminDataStore {
       });
 
     result = [...result, ...created];
+
+    // Ensure all 18 canonical A-Level subjects exist for admin management
+    CANONICAL_A_LEVEL_SUBJECTS.forEach((spec) => {
+      const exists = result.some(
+        (s) => s.id === spec.id || (s.subject_code && s.subject_code.trim() === spec.code && s.qualification === 'a_level')
+      );
+      if (!exists && !deletedSet.has(spec.id)) {
+        const fallbackObj: any = {
+          id: spec.id,
+          name: spec.name,
+          subject_code: spec.code,
+          qualification: 'a_level',
+          color: spec.hex,
+          icon: spec.icon,
+          display_order: spec.order,
+          enabled: true,
+          subscription_tier: spec.code === '9709' ? 'free' : 'pro',
+          is_premium: spec.code !== '9709',
+          description: `Cambridge International AS and A Level ${spec.name} (${spec.code})`,
+        };
+        const override = this.state.subjects[spec.id];
+        result.push(override ? { ...fallbackObj, ...override } : fallbackObj);
+      }
+    });
+
     return result;
   }
 
