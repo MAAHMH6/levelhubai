@@ -1041,4 +1041,115 @@ DO $$ BEGIN
     END IF;
 END $$;
 
+-- ==============================================================================
+-- 6. QUICK ACCESS TOOLS & STUDENT STUDY ASSETS SCHEMA
+-- ==============================================================================
+
+-- 1. Student Personal Exam Timetables
+CREATE TABLE IF NOT EXISTS public.student_timetables (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL,
+    subject TEXT NOT NULL,
+    subject_code TEXT,
+    paper TEXT NOT NULL,
+    exam_date DATE NOT NULL,
+    start_time TEXT NOT NULL DEFAULT '09:00 AM',
+    duration_minutes INTEGER NOT NULL DEFAULT 120,
+    room TEXT DEFAULT 'Main Examination Hall',
+    target_grade TEXT DEFAULT 'A*',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_student_timetables_user ON public.student_timetables(user_id, exam_date);
+
+-- 2. Student Custom Flashcards & Leitner Spaced Repetition
+CREATE TABLE IF NOT EXISTS public.student_flashcards (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL,
+    subject_id TEXT,
+    subject_name TEXT NOT NULL,
+    topic TEXT DEFAULT 'General',
+    question TEXT NOT NULL,
+    answer TEXT NOT NULL,
+    hint TEXT,
+    box_level INTEGER NOT NULL DEFAULT 1, -- 1 to 5 Leitner box
+    next_review_date DATE DEFAULT CURRENT_DATE,
+    times_reviewed INTEGER NOT NULL DEFAULT 0,
+    times_correct INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_student_flashcards_user_sub ON public.student_flashcards(user_id, subject_name);
+
+-- 3. Student Learned Keywords & Glossary Progress
+CREATE TABLE IF NOT EXISTS public.student_learned_keywords (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL,
+    keyword_id TEXT NOT NULL,
+    learned_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id, keyword_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_student_learned_keywords_user ON public.student_learned_keywords(user_id);
+
+-- 4. Official Formula Sheets Repository
+CREATE TABLE IF NOT EXISTS public.formula_sheets (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    qualification TEXT NOT NULL DEFAULT 'o_level',
+    subject TEXT NOT NULL,
+    subject_code TEXT,
+    topic TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    sections JSONB NOT NULL DEFAULT '[]'::jsonb,
+    download_url TEXT,
+    status TEXT NOT NULL DEFAULT 'published',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 5. Cambridge Exam Schedules
+CREATE TABLE IF NOT EXISTS public.cambridge_exam_schedules (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    qualification TEXT NOT NULL DEFAULT 'o_level',
+    year INTEGER NOT NULL DEFAULT 2026,
+    session TEXT NOT NULL DEFAULT 'May/June',
+    subject TEXT NOT NULL,
+    subject_code TEXT NOT NULL,
+    paper TEXT NOT NULL,
+    component TEXT,
+    exam_date DATE NOT NULL,
+    start_time TEXT NOT NULL DEFAULT '09:00 AM',
+    duration_minutes INTEGER NOT NULL DEFAULT 120,
+    status TEXT NOT NULL DEFAULT 'published',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- RLS Policies
+ALTER TABLE public.student_timetables ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.student_flashcards ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.student_learned_keywords ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.formula_sheets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.cambridge_exam_schedules ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can manage their timetables' AND tablename = 'student_timetables') THEN
+        CREATE POLICY "Users can manage their timetables" ON public.student_timetables FOR ALL USING (auth.uid() = user_id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can manage their flashcards' AND tablename = 'student_flashcards') THEN
+        CREATE POLICY "Users can manage their flashcards" ON public.student_flashcards FOR ALL USING (auth.uid() = user_id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can manage their learned keywords' AND tablename = 'student_learned_keywords') THEN
+        CREATE POLICY "Users can manage their learned keywords" ON public.student_learned_keywords FOR ALL USING (auth.uid() = user_id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Anyone can view formula sheets' AND tablename = 'formula_sheets') THEN
+        CREATE POLICY "Anyone can view formula sheets" ON public.formula_sheets FOR SELECT USING (true);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Anyone can view exam schedules' AND tablename = 'cambridge_exam_schedules') THEN
+        CREATE POLICY "Anyone can view exam schedules" ON public.cambridge_exam_schedules FOR SELECT USING (true);
+    END IF;
+END $$;
+
 COMMIT;

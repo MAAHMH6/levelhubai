@@ -86,6 +86,23 @@ export interface StudentTimetableItem {
   created_at: string;
 }
 
+export interface StudentFlashcardRecord {
+  id: string;
+  user_id: string;
+  subject_id?: string;
+  subject_name: string;
+  topic?: string;
+  question: string;
+  answer: string;
+  hint?: string;
+  box_level: number; // 1 to 5 (Leitner system)
+  next_review_date: string;
+  times_reviewed: number;
+  times_correct: number;
+  created_at: string;
+  updated_at?: string;
+}
+
 export interface PaperScoreAttemptRecord {
   id: string;
   user_id: string;
@@ -1026,13 +1043,44 @@ class ResourcesDataStore {
     this.persist(STORAGE_KEYS.SCHEDULE, this.examSchedule);
   }
 
-  // 6. Student Timetable (User Specific)
+  // 6. Student Timetable (User Specific with Supabase & Offline Cache)
   getStudentTimetable(userId: string): StudentTimetableItem[] {
     try {
       const raw = localStorage.getItem(`${STORAGE_KEYS.TIMETABLE}_${userId}`);
       if (raw) return JSON.parse(raw);
     } catch {}
     return [];
+  }
+
+  async getStudentTimetableAsync(userId: string): Promise<StudentTimetableItem[]> {
+    const local = this.getStudentTimetable(userId);
+    try {
+      const { data, error } = await (supabase.from('student_timetables') as any)
+        .select('*')
+        .eq('user_id', userId)
+        .order('exam_date', { ascending: true });
+
+      if (!error && data && data.length > 0) {
+        const mapped: StudentTimetableItem[] = data.map((d: any) => ({
+          id: d.id,
+          user_id: d.user_id,
+          subject: d.subject,
+          subject_code: d.subject_code,
+          paper: d.paper,
+          exam_date: d.exam_date,
+          start_time: d.start_time || '09:00 AM',
+          duration_minutes: d.duration_minutes || 120,
+          room: d.room || 'Main Exam Hall',
+          target_grade: d.target_grade || 'A*',
+          created_at: d.created_at || new Date().toISOString(),
+        }));
+        localStorage.setItem(`${STORAGE_KEYS.TIMETABLE}_${userId}`, JSON.stringify(mapped));
+        return mapped;
+      }
+    } catch (e) {
+      console.warn('Could not fetch timetables from Supabase, using local cache:', e);
+    }
+    return local;
   }
 
   saveStudentTimetableItem(item: Omit<StudentTimetableItem, 'id' | 'created_at'>): StudentTimetableItem {
@@ -1044,6 +1092,26 @@ class ResourcesDataStore {
     const current = this.getStudentTimetable(item.user_id);
     current.push(newItem);
     localStorage.setItem(`${STORAGE_KEYS.TIMETABLE}_${item.user_id}`, JSON.stringify(current));
+
+    // Async Supabase sync
+    (supabase.from('student_timetables') as any)
+      .insert({
+        id: newItem.id,
+        user_id: newItem.user_id,
+        subject: newItem.subject,
+        subject_code: newItem.subject_code,
+        paper: newItem.paper,
+        exam_date: newItem.exam_date,
+        start_time: newItem.start_time,
+        duration_minutes: newItem.duration_minutes,
+        room: newItem.room,
+        target_grade: newItem.target_grade,
+      })
+      .then(({ error }: any) => {
+        if (error) console.warn('Supabase timetable insert warning:', error.message);
+      })
+      .catch(() => {});
+
     return newItem;
   }
 
@@ -1051,9 +1119,237 @@ class ResourcesDataStore {
     const current = this.getStudentTimetable(userId);
     const updated = current.filter(i => i.id !== id);
     localStorage.setItem(`${STORAGE_KEYS.TIMETABLE}_${userId}`, JSON.stringify(updated));
+
+    // Async Supabase delete
+    (supabase.from('student_timetables') as any)
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId)
+      .then(({ error }: any) => {
+        if (error) console.warn('Supabase timetable delete warning:', error.message);
+      })
+      .catch(() => {});
   }
 
-  // 7. Paper Score Attempts (User Specific)
+  exportTimetableToIcs(items: StudentTimetableItem[], filename = 'Cambridge_Exam_Timetable.ics') {
+    if (!items || items.length === 0) return;
+
+    const pad = (n: number) => (n < 10 ? '0' + n : '' + n);
+
+    const formatIcsDate = (dateStr: string, timeStr = '09:00 AM') => {
+      const parts = dateStr.split('-');
+      const year = parseInt(parts[0]) || 2026;
+      const month = parseInt(parts[1]) || 5;
+      const day = parseInt(parts[2]) || 1;
+
+      let hour = 9;
+      let minute = 0;
+      if (timeStr) {
+        const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+        if (match) {
+          hour = parseInt(match[1]);
+          minute = parseInt(match[2]);
+          const ampm = (match[3] || '').toUpperCase();
+          if (ampm === 'PM' && hour < 12) hour += 12;
+          if (ampm === 'AM' && hour === 12) hour = 0;
+        }
+      }
+      return `${year}${pad(month)}${pad(day)}T${pad(hour)}${pad(minute)}00`;
+    };
+
+    const icsLines = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//LevelHubAI//Cambridge Timetable Builder//EN',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+      'X-WR-CALNAME:Cambridge Exam Timetable (LevelHubAI)',
+      'X-WR-TIMEZONE:UTC',
+    ];
+
+    items.forEach((item) => {
+      const dtStart = formatIcsDate(item.exam_date, item.start_time);
+      icsLines.push(
+        'BEGIN:VEVENT',
+        `UID:${item.id || crypto.randomUUID()}@levelhubai.com`,
+        `DTSTAMP:${formatIcsDate(new Date().toISOString().slice(0, 10), '12:00 PM')}Z`,
+        `DTSTART:${dtStart}`,
+        `SUMMARY:Cambridge Exam: ${item.subject} (${item.paper})`,
+        `DESCRIPTION:Target Grade: ${item.target_grade || 'A*'}\\nDuration: ${item.duration_minutes || 120} mins\\nLocation: ${item.room || 'Main Exam Hall'}\\nLevelHubAI Cambridge Self-Study`,
+        `LOCATION:${item.room || 'Main Exam Hall'}`,
+        'STATUS:CONFIRMED',
+        'BEGIN:VALARM',
+        'TRIGGER:-PT24H',
+        'ACTION:DISPLAY',
+        `DESCRIPTION:Reminder: Cambridge ${item.subject} exam tomorrow!`,
+        'END:VALARM',
+        'END:VEVENT'
+      );
+    });
+
+    icsLines.push('END:VCALENDAR');
+
+    const blob = new Blob([icsLines.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = window.URL.createObjectURL(blob);
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  // 7. Student Flashcards & Leitner Spaced Repetition
+  getStudentFlashcards(userId: string): StudentFlashcardRecord[] {
+    try {
+      const raw = localStorage.getItem(`lh_student_flashcards_${userId}`);
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    return [];
+  }
+
+  async getStudentFlashcardsAsync(userId: string, subjectName?: string): Promise<StudentFlashcardRecord[]> {
+    const local = this.getStudentFlashcards(userId);
+    try {
+      let query = (supabase.from('student_flashcards') as any)
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (subjectName && subjectName !== 'all') {
+        query = query.ilike('subject_name', `%${subjectName}%`);
+      }
+
+      const { data, error } = await query;
+      if (!error && data && data.length > 0) {
+        localStorage.setItem(`lh_student_flashcards_${userId}`, JSON.stringify(data));
+        return data;
+      }
+    } catch (e) {
+      console.warn('Could not fetch flashcards from Supabase, using local cache:', e);
+    }
+    return local;
+  }
+
+  async saveStudentFlashcardAsync(card: Omit<StudentFlashcardRecord, 'id' | 'created_at'>): Promise<StudentFlashcardRecord> {
+    const newCard: StudentFlashcardRecord = {
+      ...card,
+      id: crypto.randomUUID(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    const current = this.getStudentFlashcards(card.user_id);
+    current.unshift(newCard);
+    localStorage.setItem(`lh_student_flashcards_${card.user_id}`, JSON.stringify(current));
+
+    try {
+      await (supabase.from('student_flashcards') as any).insert({
+        id: newCard.id,
+        user_id: newCard.user_id,
+        subject_id: newCard.subject_id,
+        subject_name: newCard.subject_name,
+        topic: newCard.topic || 'General',
+        question: newCard.question,
+        answer: newCard.answer,
+        hint: newCard.hint,
+        box_level: newCard.box_level || 1,
+        next_review_date: newCard.next_review_date,
+        times_reviewed: 0,
+        times_correct: 0,
+      });
+    } catch (e) {
+      console.warn('Supabase flashcard insert warning:', e);
+    }
+
+    return newCard;
+  }
+
+  async updateFlashcardReviewAsync(userId: string, cardId: string, known: boolean): Promise<void> {
+    const current = this.getStudentFlashcards(userId);
+    const card = current.find(c => c.id === cardId);
+    if (!card) return;
+
+    // Leitner intervals: Box 1 (1d), Box 2 (3d), Box 3 (7d), Box 4 (14d), Box 5 (30d)
+    const boxIntervals: Record<number, number> = { 1: 1, 2: 3, 3: 7, 4: 14, 5: 30 };
+    let newBox = known ? Math.min(5, (card.box_level || 1) + 1) : 1;
+    const intervalDays = boxIntervals[newBox] || 1;
+
+    const nextDate = new Date();
+    nextDate.setDate(nextDate.getDate() + intervalDays);
+    const nextReviewStr = nextDate.toISOString().slice(0, 10);
+
+    card.box_level = newBox;
+    card.next_review_date = nextReviewStr;
+    card.times_reviewed = (card.times_reviewed || 0) + 1;
+    if (known) card.times_correct = (card.times_correct || 0) + 1;
+    card.updated_at = new Date().toISOString();
+
+    localStorage.setItem(`lh_student_flashcards_${userId}`, JSON.stringify(current));
+
+    try {
+      await (supabase.from('student_flashcards') as any)
+        .update({
+          box_level: card.box_level,
+          next_review_date: card.next_review_date,
+          times_reviewed: card.times_reviewed,
+          times_correct: card.times_correct,
+          updated_at: card.updated_at,
+        })
+        .eq('id', cardId)
+        .eq('user_id', userId);
+    } catch {}
+  }
+
+  async deleteStudentFlashcardAsync(userId: string, cardId: string): Promise<void> {
+    const current = this.getStudentFlashcards(userId);
+    const updated = current.filter(c => c.id !== cardId);
+    localStorage.setItem(`lh_student_flashcards_${userId}`, JSON.stringify(updated));
+
+    try {
+      await (supabase.from('student_flashcards') as any)
+        .delete()
+        .eq('id', cardId)
+        .eq('user_id', userId);
+    } catch {}
+  }
+
+  // 8. Student Learned Keywords & Glossary Tracking
+  async getLearnedKeywordsAsync(userId: string): Promise<string[]> {
+    const local = this.getLearnedKeywordIds(userId);
+    try {
+      const { data, error } = await (supabase.from('student_learned_keywords') as any)
+        .select('keyword_id')
+        .eq('user_id', userId);
+
+      if (!error && data && data.length > 0) {
+        const ids = data.map((d: any) => d.keyword_id);
+        localStorage.setItem(`${STORAGE_KEYS.LEARNED_KEYWORDS}_${userId}`, JSON.stringify(ids));
+        return ids;
+      }
+    } catch {}
+    return local;
+  }
+
+  async toggleLearnedKeywordAsync(userId: string, keywordId: string): Promise<boolean> {
+    const isLearned = this.toggleLearnedKeyword(userId, keywordId);
+    try {
+      if (isLearned) {
+        await (supabase.from('student_learned_keywords') as any).upsert({
+          user_id: userId,
+          keyword_id: keywordId,
+          learned_at: new Date().toISOString(),
+        });
+      } else {
+        await (supabase.from('student_learned_keywords') as any)
+          .delete()
+          .eq('user_id', userId)
+          .eq('keyword_id', keywordId);
+      }
+    } catch {}
+    return isLearned;
+  }
+
+  // 9. Paper Score Attempts (User Specific)
   async getScoreAttempts(userId: string): Promise<PaperScoreAttemptRecord[]> {
     try {
       const { data, error } = await (supabase.from('past_paper_attempts') as any)
