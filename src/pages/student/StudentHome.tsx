@@ -33,7 +33,6 @@ import { featureStorage, StudyPlanItem } from '@/integrations/supabase/featureCl
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useLeaderboard } from '@/hooks/useLeaderboard';
-import { Leaderboard } from '@/components/leaderboard/Leaderboard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -883,13 +882,7 @@ export const StudentHome: React.FC = () => {
         </div>
       </Card>
 
-      {/* 8. LIVE COMMUNITY LEADERBOARD & ACHIEVEMENTS */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Leaderboard limit={10} />
-        <BadgeShowcase />
-      </div>
-
-      {/* 9. FREE CAMBRIDGE STUDY & EXAM TOOLS */}
+      {/* 8. FREE CAMBRIDGE STUDY & EXAM TOOLS */}
       <Card className="rounded-3xl border-slate-200/80 dark:border-slate-800 bg-gradient-to-r from-slate-900 via-slate-900 to-teal-950 p-6 sm:p-7 shadow-md text-white space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
