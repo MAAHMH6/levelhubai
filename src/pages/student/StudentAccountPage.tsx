@@ -750,11 +750,6 @@ export const StudentAccountPage: React.FC = () => {
         </Card>
       )}
 
-      {/* TAB CONTENT: REFER A FRIEND (Original Old Platform Referral Center with Milestones & History) */}
-      {activeTab === 'referral' && (
-        <StudentReferralCenter />
-      )}
-
       {/* TAB CONTENT: PARENT CONNECT */}
       {activeTab === 'parent' && (
         <div className="space-y-6">
