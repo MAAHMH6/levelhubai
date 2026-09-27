@@ -27,7 +27,8 @@ import {
   Download,
   Play,
   FileText,
-  Users
+  Users,
+  Loader2
 } from 'lucide-react';
 import { useStudentProgramme } from '@/contexts/StudentProgrammeContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -83,7 +84,7 @@ const NAV_ITEMS = [
 
 export const StudentAppLayout: React.FC = () => {
   const { profile, programmeLabel } = useStudentProgramme();
-  const { user, signOut } = useAuth();
+  const { user, signOut, loading: authLoading } = useAuth();
   const { isAdmin } = useAdmin();
   const sub = useSubscription();
   const navigate = useNavigate();
@@ -94,6 +95,12 @@ export const StudentAppLayout: React.FC = () => {
 
   const isQuickAccessActive = location.pathname.startsWith('/quick-access') || location.pathname.startsWith('/resources');
 
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/auth');
+    }
+  }, [user, authLoading, navigate]);
+
   const handleSignOut = async () => {
     await signOut();
     navigate('/auth');
@@ -102,6 +109,18 @@ export const StudentAppLayout: React.FC = () => {
   const handleExportReport = () => {
     setReportModalOpen(true);
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex bg-slate-50/50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased">

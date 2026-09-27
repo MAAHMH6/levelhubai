@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ const passwordSchema = z.string().min(6, "Password must be at least 6 characters
 
 const Auth = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
@@ -28,18 +29,25 @@ const Auth = () => {
   const [referralCode, setReferralCode] = useState("");
   const [ageConsent, setAgeConsent] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
-  const [programme, setProgramme] = useState<"o_level" | "igcse" | "a_level">("igcse");
+  const [tab, setTab] = useState<string>(
+    searchParams.get("tab") === "signup" || searchParams.get("ref") ? "signup" : "signin"
+  );
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const ref = params.get("ref");
-    const teacherRef = params.get("teacher_ref");
+    const tabParam = searchParams.get("tab");
+    const ref = searchParams.get("ref");
+    const teacherRef = searchParams.get("teacher_ref");
     const activeRef = ref || teacherRef;
     
     if (activeRef) {
       setReferralCode(activeRef);
       setRole("student");
+      setTab("signup");
       localStorage.setItem("pending_referral_code", activeRef);
+    } else if (tabParam === "signup") {
+      setTab("signup");
+    } else if (tabParam === "signin") {
+      setTab("signin");
     }
 
     const checkRoleAndRedirect = async () => {
@@ -50,12 +58,12 @@ const Auth = () => {
         } else if (data?.role === 'parent') {
           navigate("/parent/dashboard");
         } else {
-          navigate("/home");
+          navigate("/dashboard");
         }
       }
     };
     checkRoleAndRedirect();
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, searchParams]);
 
   const validateInputs = (isSignUp: boolean) => {
     try {
@@ -115,7 +123,7 @@ const Auth = () => {
           return;
         }
       }
-      navigate("/home");
+      navigate("/dashboard");
     }
     setLoading(false);
   };
@@ -169,8 +177,7 @@ const Auth = () => {
         data: {
           full_name: displayName,
           role: role,
-          grade_level: role === "student" ? programme : null,
-          referral_code: role === "student" ? referralCode : null,
+          referral_code: role === "student" && referralCode ? referralCode : null,
         },
       },
     });
@@ -235,7 +242,7 @@ const Auth = () => {
         </CardHeader>
 
         <CardContent>
-          <Tabs defaultValue="signin" className="space-y-4">
+          <Tabs value={tab} onValueChange={(val) => setTab(val)} className="space-y-4">
             {!isForgotPassword ? (
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">Sign In</TabsTrigger>
@@ -416,38 +423,6 @@ const Auth = () => {
                     </Button>
                   </div>
                 </div>
-
-                {role === "student" && (
-                  <div className="space-y-2 pt-1">
-                    <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">Cambridge Programme</Label>
-                    <div className="grid grid-cols-3 gap-2">
-                      <Button
-                        type="button"
-                        variant={programme === "o_level" ? "default" : "outline"}
-                        onClick={() => setProgramme("o_level")}
-                        className={`text-xs h-9 rounded-xl ${programme === "o_level" ? "bg-teal-600 hover:bg-teal-500 text-white font-bold" : ""}`}
-                      >
-                        O Level
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={programme === "igcse" ? "default" : "outline"}
-                        onClick={() => setProgramme("igcse")}
-                        className={`text-xs h-9 rounded-xl ${programme === "igcse" ? "bg-teal-600 hover:bg-teal-500 text-white font-bold" : ""}`}
-                      >
-                        IGCSE
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={programme === "a_level" ? "default" : "outline"}
-                        onClick={() => setProgramme("a_level")}
-                        className={`text-xs h-9 rounded-xl ${programme === "a_level" ? "bg-teal-600 hover:bg-teal-500 text-white font-bold" : ""}`}
-                      >
-                        A Level
-                      </Button>
-                    </div>
-                  </div>
-                )}
 
                 {role === "student" && (
                   <div className="space-y-2">

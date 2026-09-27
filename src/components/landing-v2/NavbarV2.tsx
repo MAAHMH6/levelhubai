@@ -326,12 +326,30 @@ export const NavbarV2: React.FC<NavbarV2Props> = ({
               <span>WhatsApp</span>
             </Button>
 
-            <Link to="/dashboard">
-              <Button variant="hero" size="sm" className="h-9 px-4 text-xs font-bold gap-1.5">
-                {user ? "Dashboard" : "Student Dashboard"}
-                <Sparkles className="w-3.5 h-3.5" />
-              </Button>
-            </Link>
+            {!loading && (
+              user ? (
+                <Link to="/dashboard">
+                  <Button variant="hero" size="sm" className="h-9 px-4 text-xs font-bold gap-1.5">
+                    <span>Dashboard</span>
+                    <Sparkles className="w-3.5 h-3.5" />
+                  </Button>
+                </Link>
+              ) : (
+                <>
+                  <Link to="/auth?tab=signin">
+                    <Button variant="ghost" size="sm" className="h-9 px-3 text-xs font-semibold">
+                      Log In
+                    </Button>
+                  </Link>
+                  <Link to="/auth?tab=signup">
+                    <Button variant="hero" size="sm" className="h-9 px-4 text-xs font-bold gap-1.5">
+                      <span>Get Started</span>
+                      <Sparkles className="w-3.5 h-3.5" />
+                    </Button>
+                  </Link>
+                </>
+              )
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -400,16 +418,39 @@ export const NavbarV2: React.FC<NavbarV2Props> = ({
                   Chat on WhatsApp
                 </Button>
 
-                <Link
-                  to="/dashboard"
-                  onClick={() => setIsOpen(false)}
-                  className="w-full"
-                >
-                  <Button variant="hero" size="sm" className="w-full justify-center">
-                    {user ? "Go to Dashboard" : "Student Dashboard"}
-                    <Sparkles className="w-3.5 h-3.5 ml-1.5" />
-                  </Button>
-                </Link>
+                {!loading && (
+                  user ? (
+                    <Link
+                      to="/dashboard"
+                      onClick={() => setIsOpen(false)}
+                      className="w-full"
+                    >
+                      <Button variant="hero" size="sm" className="w-full justify-center">
+                        <span>Go to Dashboard</span>
+                        <Sparkles className="w-3.5 h-3.5 ml-1.5" />
+                      </Button>
+                    </Link>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2 w-full">
+                      <Link
+                        to="/auth?tab=signin"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        <Button variant="outline" size="sm" className="w-full justify-center text-xs font-bold">
+                          Log In
+                        </Button>
+                      </Link>
+                      <Link
+                        to="/auth?tab=signup"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        <Button variant="hero" size="sm" className="w-full justify-center text-xs font-bold">
+                          Get Started
+                        </Button>
+                      </Link>
+                    </div>
+                  )
+                )}
               </div>
             </div>
           </div>
