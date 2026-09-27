@@ -21,8 +21,6 @@ BEGIN;
 -- 1. PROFILES & SUBJECTS SCHEMA ENHANCEMENTS
 -- ==============================================================================
 
-ALTER TABLE "public"."profiles" ADD COLUMN IF NOT EXISTS "referral_code" text;
-ALTER TABLE "public"."profiles" ADD COLUMN IF NOT EXISTS "referred_by" uuid;
 ALTER TABLE "public"."profiles" ADD COLUMN IF NOT EXISTS "grade_level" text DEFAULT 'igcse';
 ALTER TABLE "public"."profiles" ADD COLUMN IF NOT EXISTS "school" text DEFAULT 'Cambridge Academy';
 ALTER TABLE "public"."profiles" ADD COLUMN IF NOT EXISTS "coins" integer DEFAULT 0;
@@ -30,8 +28,6 @@ ALTER TABLE "public"."profiles" ADD COLUMN IF NOT EXISTS "xp_points" integer DEF
 ALTER TABLE "public"."profiles" ADD COLUMN IF NOT EXISTS "level" integer DEFAULT 1;
 ALTER TABLE "public"."profiles" ADD COLUMN IF NOT EXISTS "streak_days" integer DEFAULT 0;
 ALTER TABLE "public"."profiles" ADD COLUMN IF NOT EXISTS "last_active_at" timestamp with time zone DEFAULT now();
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_profiles_referral_code ON "public"."profiles"("referral_code") WHERE "referral_code" IS NOT NULL;
 
 ALTER TABLE "public"."subjects" ADD COLUMN IF NOT EXISTS "qualification_variant" text;
 ALTER TABLE "public"."subjects" ADD COLUMN IF NOT EXISTS "exam_board" text DEFAULT 'Cambridge';
@@ -960,144 +956,7 @@ ON CONFLICT (id) DO UPDATE SET
 
 
 -- ==============================================================================
--- 3. STUDENT REFERRAL SYSTEM & ADMIN APPROVAL WORKFLOW
--- ==============================================================================
-
-CREATE TABLE IF NOT EXISTS public.student_referrals (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    referrer_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-    referred_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'active')),
-    reward_status TEXT NOT NULL DEFAULT 'pending' CHECK (reward_status IN ('pending', 'pending_approval', 'rewarded', 'rejected')),
-    risk_score NUMERIC DEFAULT 0,
-    risk_details JSONB DEFAULT '[]'::jsonb,
-    referred_ip TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE(referred_id)
-);
-
-CREATE INDEX IF NOT EXISTS idx_student_referrals_referrer ON public.student_referrals(referrer_id);
-CREATE INDEX IF NOT EXISTS idx_student_referrals_referred ON public.student_referrals(referred_id);
-
-ALTER TABLE public.student_referrals ENABLE ROW LEVEL SECURITY;
-
-DO $$ BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can view their own referrals' AND tablename = 'student_referrals') THEN
-        CREATE POLICY "Users can view their own referrals" ON public.student_referrals
-            FOR SELECT USING (auth.uid() = referrer_id OR auth.uid() = referred_id);
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Admins can manage all referrals' AND tablename = 'student_referrals') THEN
-        CREATE POLICY "Admins can manage all referrals" ON public.student_referrals
-            FOR ALL USING (
-                EXISTS (
-                    SELECT 1 FROM public.user_roles 
-                    WHERE user_id = auth.uid() AND role = 'admin'
-                )
-            );
-    END IF;
-END $$;
-
--- Trigger for student activation on XP acquisition
-CREATE OR REPLACE FUNCTION public.check_student_activation() RETURNS trigger
-    LANGUAGE plpgsql SECURITY DEFINER
-    SET search_path TO 'public'
-    AS $$
-DECLARE
-  v_referrer_id UUID;
-  v_active_count INT;
-BEGIN
-  IF (TG_OP = 'UPDATE' AND NEW.xp_points > 0 AND (OLD.xp_points IS NULL OR OLD.xp_points = 0)) OR (TG_OP = 'INSERT' AND NEW.xp_points > 0) THEN
-    SELECT referrer_id INTO v_referrer_id 
-    FROM public.student_referrals 
-    WHERE referred_id = NEW.id AND status = 'pending';
-
-    IF v_referrer_id IS NOT NULL THEN
-      UPDATE public.student_referrals 
-      SET status = 'active', updated_at = now()
-      WHERE referred_id = NEW.id;
-
-      SELECT COUNT(*) INTO v_active_count 
-      FROM public.student_referrals 
-      WHERE referrer_id = v_referrer_id AND status = 'active';
-
-      IF v_active_count = 1 OR v_active_count = 3 THEN
-        UPDATE public.student_referrals SET reward_status = 'pending_approval' WHERE referred_id = NEW.id;
-      END IF;
-    END IF;
-  END IF;
-  RETURN NEW;
-END;
-$$;
-
-DROP TRIGGER IF EXISTS trigger_check_student_activation ON public.profiles;
-CREATE TRIGGER trigger_check_student_activation
-    AFTER INSERT OR UPDATE OF xp_points ON public.profiles
-    FOR EACH ROW EXECUTE FUNCTION public.check_student_activation();
-
--- RPC: Admin Milestone Approval
-CREATE OR REPLACE FUNCTION public.approve_referral_milestone(p_referral_id uuid) RETURNS jsonb
-    LANGUAGE plpgsql SECURITY DEFINER
-    SET search_path TO 'public'
-    AS $$
-DECLARE
-  v_referrer_id UUID;
-  v_active_count INT;
-BEGIN
-  IF NOT public.has_role(auth.uid(), 'admin') THEN
-    RETURN '{"success": false, "message": "Unauthorized"}'::JSONB;
-  END IF;
-
-  SELECT referrer_id INTO v_referrer_id 
-  FROM public.student_referrals 
-  WHERE id = p_referral_id AND reward_status = 'pending_approval';
-
-  IF v_referrer_id IS NULL THEN
-    RETURN '{"success": false, "message": "Referral not found or not pending approval"}'::JSONB;
-  END IF;
-
-  SELECT COUNT(*) INTO v_active_count 
-  FROM public.student_referrals 
-  WHERE referrer_id = v_referrer_id AND status = 'active';
-
-  IF v_active_count >= 3 THEN
-    PERFORM public.grant_pro_access(v_referrer_id, 30);
-  ELSE
-    PERFORM public.grant_pro_access(v_referrer_id, 7);
-  END IF;
-
-  UPDATE public.student_referrals SET reward_status = 'rewarded', updated_at = now() WHERE id = p_referral_id;
-  RETURN '{"success": true, "message": "Milestone approved successfully"}'::JSONB;
-END;
-$$;
-
--- RPC: Admin Milestone Rejection
-CREATE OR REPLACE FUNCTION public.reject_referral_milestone(p_referral_id uuid, p_reason text DEFAULT 'Violation of referral terms') RETURNS jsonb
-    LANGUAGE plpgsql SECURITY DEFINER
-    SET search_path TO 'public'
-    AS $$
-DECLARE
-  v_referrer_id UUID;
-BEGIN
-  IF NOT public.has_role(auth.uid(), 'admin') THEN
-    RETURN '{"success": false, "message": "Unauthorized"}'::JSONB;
-  END IF;
-
-  SELECT referrer_id INTO v_referrer_id 
-  FROM public.student_referrals 
-  WHERE id = p_referral_id AND reward_status = 'pending_approval';
-
-  IF v_referrer_id IS NULL THEN
-    RETURN '{"success": false, "message": "Referral not found or not pending approval"}'::JSONB;
-  END IF;
-
-  UPDATE public.student_referrals SET reward_status = 'rejected', updated_at = now() WHERE id = p_referral_id;
-  RETURN '{"success": true, "message": "Milestone rejected successfully"}'::JSONB;
-END;
-$$;
-
--- ==============================================================================
--- 4. NEW FEATURES SCHEMA (STUDY PLANS, MISTAKES, AI CONTEXT, USAGE LIMITS)
+-- 3. NEW FEATURES SCHEMA (STUDY PLANS, MISTAKES, AI CONTEXT, USAGE LIMITS)
 -- ==============================================================================
 
 CREATE TABLE IF NOT EXISTS public.study_plans (
