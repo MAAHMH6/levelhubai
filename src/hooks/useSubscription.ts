@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,8 +19,14 @@ export interface SubscriptionState {
 }
 
 const FREE_STATE: SubscriptionState = {
-  plan: "free", status: "active", isPro: false, isSchool: false,
-  isActive: true, currentPeriodEnd: null, cancelAt: null, raw: null,
+  plan: "free",
+  status: "active",
+  isPro: false,
+  isSchool: false,
+  isActive: true,
+  currentPeriodEnd: null,
+  cancelAt: null,
+  raw: null,
 };
 
 export function useSubscription() {
@@ -33,7 +39,25 @@ export function useSubscription() {
     queryFn: async (): Promise<SubscriptionState> => {
       if (!user) return FREE_STATE;
 
-      // Check both subscriptions table and profiles table (set by Admin or registration)
+      // 1. Check if admin explicitly assigned or modified role/subscription in Admin Panel
+      const adminSub = adminDataStore.getSubscription(user.id);
+      if (adminSub) {
+        if (adminSub.plan === 'free') {
+          return FREE_STATE;
+        }
+        return {
+          plan: adminSub.plan,
+          status: (adminSub.status as SubStatus) || 'active',
+          isPro: adminSub.plan === 'pro',
+          isSchool: adminSub.plan === 'school',
+          isActive: true,
+          currentPeriodEnd: null,
+          cancelAt: null,
+          raw: adminSub,
+        };
+      }
+
+      // 2. Query both subscriptions table and profiles table
       const [subRes, profileRes] = await Promise.all([
         supabase
           .from("subscriptions")
@@ -52,21 +76,29 @@ export function useSubscription() {
       const profilePlan = prof?.subscription_plan?.toLowerCase();
       const profileTier = (prof as any)?.subscription_tier?.toLowerCase();
       const role = (prof as any)?.role?.toLowerCase();
-      const adminSub = adminDataStore.getSubscription(user.id);
-      const localPlan = typeof window !== 'undefined' 
-        ? (localStorage.getItem(`levelhub_sub_${user.id}`) || localStorage.getItem('levelhub_user_plan') || (localStorage.getItem('pro_override') === 'true' ? 'pro' : null))
-        : null;
 
-      // If admin explicitly set this user's subscription in admin store, prioritize it
-      if (adminSub) {
-        if (adminSub.plan === 'free') {
-          return FREE_STATE;
-        }
+      // Check if admin granted pro/school or if role is admin
+      const isDbAdmin = role === 'admin';
+      const isDbPro = profilePlan === 'pro' || profilePlan === 'premium' || profileTier === 'pro';
+      const isDbSchool = profilePlan === 'school' || profileTier === 'school';
+
+      // Check subscriptions table
+      const isSubActive = subData && (subData.status === 'active' || subData.status === 'trialing');
+      const isSubPro = isSubActive && (subData.plan === 'pro');
+      const isSubSchool = isSubActive && (subData.plan === 'school');
+
+      // Check if current subscription has not expired
+      let periodExpired = false;
+      if (subData?.current_period_end) {
+        periodExpired = new Date(subData.current_period_end).getTime() < Date.now();
+      }
+
+      if ((isDbPro || isSubPro) && !periodExpired) {
         return {
-          plan: adminSub.plan,
-          status: adminSub.status as SubStatus,
-          isPro: adminSub.plan === 'pro',
-          isSchool: adminSub.plan === 'school',
+          plan: 'pro',
+          status: (subData?.status as SubStatus) || 'active',
+          isPro: true,
+          isSchool: false,
           isActive: true,
           currentPeriodEnd: subData?.current_period_end || null,
           cancelAt: subData?.cancel_at || null,
@@ -74,43 +106,63 @@ export function useSubscription() {
         };
       }
 
-      // Treat profile as Pro if set to 'pro', 'premium', active status, or admin
-      const isProfilePro = 
-        profilePlan === 'pro' || 
-        profilePlan === 'premium' || 
-        profileTier === 'pro' || 
-        role === 'admin' ||
-        role === 'pro' ||
-        localPlan === 'pro';
-      const isProfileSchool = profilePlan === 'school' || profileTier === 'school' || localPlan === 'school';
-
-      // A subscriptions row with plan='pro' or 'school'
-      const subIsPro = subData?.plan === 'pro' || subData?.plan === 'school';
-
-      // If nothing grants pro access, return free state immediately
-      if (!subIsPro && !isProfilePro && !isProfileSchool) {
-        return FREE_STATE;
+      if ((isDbSchool || isSubSchool) && !periodExpired) {
+        return {
+          plan: 'school',
+          status: (subData?.status as SubStatus) || 'active',
+          isPro: false,
+          isSchool: true,
+          isActive: true,
+          currentPeriodEnd: subData?.current_period_end || null,
+          cancelAt: subData?.cancel_at || null,
+          raw: subData,
+        };
       }
 
-      const status = (subData?.status as SubStatus) || "active";
+      if (isDbAdmin) {
+        return {
+          plan: 'pro',
+          status: 'active',
+          isPro: true,
+          isSchool: false,
+          isActive: true,
+          currentPeriodEnd: null,
+          cancelAt: null,
+          raw: { role: 'admin' },
+        };
+      }
 
-      // Determine effective plan from most authoritative source
-      let plan: PlanTier = "free";
-      if (isProfilePro) plan = "pro";
-      else if (isProfileSchool) plan = "school";
-      else if (subData?.plan === 'pro') plan = "pro";
-      else if (subData?.plan === 'school') plan = "school";
+      // 3. Check Referral Requirement:
+      // A user gets Pro if they have met referral milestones (e.g. at least 1 active/rewarded referral)
+      try {
+        const { data: referrals } = await supabase
+          .from("student_referrals")
+          .select("id, status, reward_status")
+          .eq("referrer_id", user.id);
 
-      return {
-        plan,
-        status,
-        isPro: plan === "pro",
-        isSchool: plan === "school",
-        isActive: true,
-        currentPeriodEnd: subData?.current_period_end || null,
-        cancelAt: subData?.cancel_at || null,
-        raw: subData,
-      };
+        if (referrals && referrals.length > 0) {
+          const activeCount = referrals.filter(r => r.status === "active").length;
+          const rewardedCount = referrals.filter(r => r.reward_status === "rewarded").length;
+
+          if (activeCount >= 1 || rewardedCount >= 1) {
+            return {
+              plan: "pro",
+              status: "active",
+              isPro: true,
+              isSchool: false,
+              isActive: true,
+              currentPeriodEnd: null,
+              cancelAt: null,
+              raw: { source: 'referral_earned', activeCount, rewardedCount },
+            };
+          }
+        }
+      } catch (refErr) {
+        console.warn("Error checking referral requirement:", refErr);
+      }
+
+      // Strictly return free state if neither admin changed role nor referral requirement met
+      return FREE_STATE;
     },
   });
 
@@ -120,7 +172,10 @@ export function useSubscription() {
       qc.invalidateQueries({ queryKey: ["subscription", user.id] });
       qc.invalidateQueries({ queryKey: ["subscription"] });
     };
+
     window.addEventListener("levelhub:subscription_updated", handleUpdate);
+    window.addEventListener("levelhub:referral_updated", handleUpdate);
+    window.addEventListener("levelhub:admin_data_updated", handleUpdate);
 
     const ch = supabase
       .channel(`sub:${user.id}`)
@@ -134,10 +189,17 @@ export function useSubscription() {
         { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${user.id}` },
         handleUpdate,
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "student_referrals", filter: `referrer_id=eq.${user.id}` },
+        handleUpdate,
+      )
       .subscribe();
 
     return () => { 
       window.removeEventListener("levelhub:subscription_updated", handleUpdate);
+      window.removeEventListener("levelhub:referral_updated", handleUpdate);
+      window.removeEventListener("levelhub:admin_data_updated", handleUpdate);
       supabase.removeChannel(ch); 
     };
   }, [user, qc]);

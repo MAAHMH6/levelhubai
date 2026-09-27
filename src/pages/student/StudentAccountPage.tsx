@@ -41,6 +41,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import ProfileManager from '@/components/profile/ProfileManager';
 import { PrivacySettings } from '@/components/profile/PrivacySettings';
+import { StudentReferralCenter } from '@/components/referral/StudentReferralCenter';
 import { toast } from 'sonner';
 
 export const StudentAccountPage: React.FC = () => {
@@ -54,6 +55,11 @@ export const StudentAccountPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'profile' | 'programme' | 'exam' | 'privacy' | 'billing' | 'referral' | 'parent'>(
     tabQuery && ['profile', 'programme', 'exam', 'privacy', 'billing', 'referral', 'parent'].includes(tabQuery) ? tabQuery : 'profile'
   );
+
+  const handleTabChange = (tab: typeof activeTab) => {
+    setActiveTab(tab);
+    navigate(`/account?tab=${tab}`, { replace: true });
+  };
 
   useEffect(() => {
     if (tabQuery && ['profile', 'programme', 'exam', 'privacy', 'billing', 'referral', 'parent'].includes(tabQuery)) {
@@ -281,7 +287,7 @@ export const StudentAccountPage: React.FC = () => {
       {/* Tabs */}
       <div className="flex items-center gap-2 border-b border-slate-200/80 dark:border-slate-800 pb-3 overflow-x-auto scrollbar-none">
         <button
-          onClick={() => setActiveTab('profile')}
+          onClick={() => handleTabChange('profile')}
           className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
             activeTab === 'profile' ? 'bg-teal-600 text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
@@ -289,7 +295,7 @@ export const StudentAccountPage: React.FC = () => {
           Profile & School
         </button>
         <button
-          onClick={() => setActiveTab('programme')}
+          onClick={() => handleTabChange('programme')}
           className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
             activeTab === 'programme' ? 'bg-teal-600 text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
@@ -297,7 +303,7 @@ export const StudentAccountPage: React.FC = () => {
           Enrolled Programme
         </button>
         <button
-          onClick={() => setActiveTab('exam')}
+          onClick={() => handleTabChange('exam')}
           className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
             activeTab === 'exam' ? 'bg-teal-600 text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
@@ -305,7 +311,7 @@ export const StudentAccountPage: React.FC = () => {
           Exam Goals & Targets
         </button>
         <button
-          onClick={() => setActiveTab('privacy')}
+          onClick={() => handleTabChange('privacy')}
           className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
             activeTab === 'privacy' ? 'bg-teal-600 text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
@@ -313,7 +319,7 @@ export const StudentAccountPage: React.FC = () => {
           Privacy & Security
         </button>
         <button
-          onClick={() => setActiveTab('billing')}
+          onClick={() => handleTabChange('billing')}
           className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
             activeTab === 'billing' ? 'bg-teal-600 text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
@@ -321,7 +327,7 @@ export const StudentAccountPage: React.FC = () => {
           Plan & Billing
         </button>
         <button
-          onClick={() => setActiveTab('parent')}
+          onClick={() => handleTabChange('parent')}
           className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
             activeTab === 'parent' ? 'bg-teal-600 text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
@@ -330,7 +336,7 @@ export const StudentAccountPage: React.FC = () => {
           Parent Connect
         </button>
         <button
-          onClick={() => setActiveTab('referral')}
+          onClick={() => handleTabChange('referral')}
           className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
             activeTab === 'referral' ? 'bg-teal-600 text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
@@ -958,6 +964,13 @@ export const StudentAccountPage: React.FC = () => {
               )}
             </div>
           </Card>
+        </div>
+      )}
+
+      {/* TAB CONTENT: REFER A FRIEND */}
+      {activeTab === 'referral' && (
+        <div className="space-y-6">
+          <StudentReferralCenter />
         </div>
       )}
     </div>

@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export interface LeaderboardEntry {
   id: string;
@@ -18,206 +18,90 @@ export interface LeaderboardEntry {
   rankChange?: number;
 }
 
-// EXACT top students from Admin Dashboard (No fake emails)
-export const ADMIN_TOP_STUDENTS: LeaderboardEntry[] = [
-  {
-    id: 'user-shams-ejaz',
-    display_name: 'Shams Ejaz',
-    avatar_url: null,
-    avatar_fallback: 'S',
-    avatar_color: 'bg-blue-600 text-white',
-    xp_points: 11018,
-    level: 5,
-    streak_days: 21,
-    subscription_plan: 'free',
-    school: 'Cambridge Academy',
-  },
-  {
-    id: 'user-hamid-918',
-    display_name: 'Hamid_918',
-    avatar_url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80',
-    avatar_fallback: 'H',
-    avatar_color: 'bg-emerald-600 text-white',
-    xp_points: 4905,
-    level: 4,
-    streak_days: 16,
-    subscription_plan: 'pro',
-    school: 'Beaconhouse Jubilee',
-  },
-  {
-    id: 'user-unzila-mahar',
-    display_name: 'Unzila Mahar',
-    avatar_url: null,
-    avatar_fallback: 'U',
-    avatar_color: 'bg-rose-500 text-white',
-    xp_points: 4200,
-    level: 3,
-    streak_days: 14,
-    subscription_plan: 'free',
-    school: 'Karachi Grammar School',
-  },
-  {
-    id: 'user-mohammed-shams',
-    display_name: 'Mohammed Shams',
-    avatar_url: null,
-    avatar_fallback: 'M',
-    avatar_color: 'bg-teal-500 text-white',
-    xp_points: 3641,
-    level: 3,
-    streak_days: 11,
-    subscription_plan: 'pro',
-    school: 'Dubai College',
-  },
-  {
-    id: 'user-amirah-shams',
-    display_name: 'Amirah Shams',
-    avatar_url: null,
-    avatar_fallback: 'A',
-    avatar_color: 'bg-purple-600 text-white',
-    xp_points: 1305,
-    level: 2,
-    streak_days: 9,
-    subscription_plan: 'free',
-    school: 'Raffles Institution',
-  },
-  {
-    id: 'user-ishtiaq-ahmad',
-    display_name: 'Ishtiaq Ahmad',
-    avatar_url: null,
-    avatar_fallback: 'I',
-    avatar_color: 'bg-cyan-600 text-white',
-    xp_points: 1140,
-    level: 2,
-    streak_days: 7,
-    subscription_plan: 'free',
-    school: 'British Council International',
-  },
-  {
-    id: 'user-aj',
-    display_name: 'AJ',
-    avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-    avatar_fallback: 'AJ',
-    avatar_color: 'bg-slate-700 text-white',
-    xp_points: 1113,
-    level: 2,
-    streak_days: 6,
-    subscription_plan: 'free',
-    school: 'Singapore American School',
-  },
-  {
-    id: 'user-khizarsalman',
-    display_name: 'khizarsalman',
-    avatar_url: null,
-    avatar_fallback: 'k',
-    avatar_color: 'bg-slate-800 text-white',
-    xp_points: 855,
-    level: 1,
-    streak_days: 5,
-    subscription_plan: 'free',
-    school: 'Lahore Grammar School',
-  },
-  {
-    id: 'user-sahab-malik',
-    display_name: 'Sahab malik',
-    avatar_url: null,
-    avatar_fallback: 'S',
-    avatar_color: 'bg-emerald-500 text-white',
-    xp_points: 645,
-    level: 1,
-    streak_days: 4,
-    subscription_plan: 'free',
-    school: 'City School',
-  },
-  {
-    id: 'user-khadija-samiullah',
-    display_name: 'khadija samiullah',
-    avatar_url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
-    avatar_fallback: 'K',
-    avatar_color: 'bg-amber-600 text-white',
-    xp_points: 565,
-    level: 1,
-    streak_days: 3,
-    subscription_plan: 'free',
-    school: 'Army Public School',
-  }
-];
+// Exported for backward compatibility if referenced elsewhere
+export const ADMIN_TOP_STUDENTS: LeaderboardEntry[] = [];
 
 const XP_QUERY_KEY = (limit: number) => ['leaderboard', 'xp', limit];
 const STREAK_QUERY_KEY = (limit: number) => ['leaderboard', 'streak', limit];
 
 const fetchXpLeaderboard = async (limit: number): Promise<LeaderboardEntry[]> => {
-  let dbUsers: LeaderboardEntry[] = [];
   try {
     const { data, error } = await supabase
       .from('profiles')
       .select('id, display_name, avatar_url, xp_points, level, streak_days, subscription_plan, school')
       .order('xp_points', { ascending: false })
+      .order('streak_days', { ascending: false })
       .limit(limit);
 
-    if (!error && data && data.length > 0) {
-      // Filter out any raw email strings from display_name
-      dbUsers = data.map((d: any) => ({
-        ...d,
-        display_name: d.display_name?.includes('@') ? d.display_name.split('@')[0] : d.display_name,
-      })) as LeaderboardEntry[];
+    if (error) {
+      console.warn('Error fetching profiles for xp leaderboard:', error);
+      return [];
     }
+
+    if (!data || data.length === 0) return [];
+
+    return data.map((d: any, index: number) => {
+      const rawName = d.display_name?.trim();
+      const safeName = rawName?.includes('@') 
+        ? rawName.split('@')[0] 
+        : (rawName || 'Student');
+
+      return {
+        id: d.id,
+        display_name: safeName,
+        avatar_url: d.avatar_url || null,
+        xp_points: Math.max(0, Number(d.xp_points || 0)),
+        level: Math.max(1, Number(d.level || 1)),
+        streak_days: Math.max(0, Number(d.streak_days || 0)),
+        subscription_plan: d.subscription_plan || 'free',
+        school: d.school || null,
+        rank: index + 1,
+      };
+    });
   } catch (err) {
-    console.warn('Error fetching profiles for xp leaderboard:', err);
+    console.warn('Leaderboard XP fetch error:', err);
+    return [];
   }
-
-  // Combine database users and canonical admin students
-  const existingNames = new Set(dbUsers.map(u => (u.display_name || '').toLowerCase()));
-  const merged = [
-    ...dbUsers,
-    ...ADMIN_TOP_STUDENTS.filter(s => !existingNames.has((s.display_name || '').toLowerCase())),
-  ];
-
-  // Sort strictly by XP descending
-  merged.sort((a, b) => (b.xp_points || 0) - (a.xp_points || 0));
-
-  return merged.slice(0, limit).map((entry, index) => ({
-    ...entry,
-    rank: index + 1,
-  }));
 };
 
 const fetchStreakLeaderboard = async (limit: number): Promise<LeaderboardEntry[]> => {
-  let dbUsers: LeaderboardEntry[] = [];
   try {
     const { data, error } = await supabase
       .from('profiles')
       .select('id, display_name, avatar_url, xp_points, level, streak_days, subscription_plan, school')
       .order('streak_days', { ascending: false })
+      .order('xp_points', { ascending: false })
       .limit(limit);
 
-    if (!error && data && data.length > 0) {
-      dbUsers = data.map((d: any) => ({
-        ...d,
-        display_name: d.display_name?.includes('@') ? d.display_name.split('@')[0] : d.display_name,
-      })) as LeaderboardEntry[];
+    if (error) {
+      console.warn('Error fetching profiles for streak leaderboard:', error);
+      return [];
     }
+
+    if (!data || data.length === 0) return [];
+
+    return data.map((d: any, index: number) => {
+      const rawName = d.display_name?.trim();
+      const safeName = rawName?.includes('@') 
+        ? rawName.split('@')[0] 
+        : (rawName || 'Student');
+
+      return {
+        id: d.id,
+        display_name: safeName,
+        avatar_url: d.avatar_url || null,
+        xp_points: Math.max(0, Number(d.xp_points || 0)),
+        level: Math.max(1, Number(d.level || 1)),
+        streak_days: Math.max(0, Number(d.streak_days || 0)),
+        subscription_plan: d.subscription_plan || 'free',
+        school: d.school || null,
+        rank: index + 1,
+      };
+    });
   } catch (err) {
-    console.warn('Error fetching profiles for streak leaderboard:', err);
+    console.warn('Leaderboard streak fetch error:', err);
+    return [];
   }
-
-  const existingNames = new Set(dbUsers.map(u => (u.display_name || '').toLowerCase()));
-  const merged = [
-    ...dbUsers,
-    ...ADMIN_TOP_STUDENTS.filter(s => !existingNames.has((s.display_name || '').toLowerCase())),
-  ];
-
-  // Sort strictly by streak_days descending, secondary by xp_points
-  merged.sort((a, b) => {
-    if ((b.streak_days || 0) !== (a.streak_days || 0)) {
-      return (b.streak_days || 0) - (a.streak_days || 0);
-    }
-    return (b.xp_points || 0) - (a.xp_points || 0);
-  });
-
-  return merged.slice(0, limit).map((entry, index) => ({
-    ...entry,
-    rank: index + 1,
-  }));
 };
 
 export const useLeaderboard = (limit: number = 50) => {
@@ -226,28 +110,19 @@ export const useLeaderboard = (limit: number = 50) => {
   const prevXpRanksRef = useRef<Map<string, number>>(new Map());
   const prevStreakRanksRef = useRef<Map<string, number>>(new Map());
 
-  const initialXpData = [...ADMIN_TOP_STUDENTS]
-    .sort((a, b) => b.xp_points - a.xp_points)
-    .slice(0, limit)
-    .map((e, i) => ({ ...e, rank: i + 1 }));
+  const [userExactXpRank, setUserExactXpRank] = useState<number | undefined>(undefined);
+  const [userExactStreakRank, setUserExactStreakRank] = useState<number | undefined>(undefined);
 
-  const initialStreakData = [...ADMIN_TOP_STUDENTS]
-    .sort((a, b) => b.streak_days - a.streak_days)
-    .slice(0, limit)
-    .map((e, i) => ({ ...e, rank: i + 1 }));
-
-  const { data: xpLeaderboard = initialXpData, isLoading: xpLoading } = useQuery({
+  const { data: xpLeaderboard = [], isLoading: xpLoading } = useQuery({
     queryKey: XP_QUERY_KEY(limit),
     queryFn: () => fetchXpLeaderboard(limit),
-    initialData: initialXpData,
-    refetchInterval: 30_000,
+    refetchInterval: 15_000,
   });
 
-  const { data: streakLeaderboard = initialStreakData, isLoading: streakLoading } = useQuery({
+  const { data: streakLeaderboard = [], isLoading: streakLoading } = useQuery({
     queryKey: STREAK_QUERY_KEY(limit),
     queryFn: () => fetchStreakLeaderboard(limit),
-    initialData: initialStreakData,
-    refetchInterval: 30_000,
+    refetchInterval: 15_000,
   });
 
   // Calculate dynamic rank changes (🔺+1 / 🔻-1)
@@ -279,23 +154,93 @@ export const useLeaderboard = (limit: number = 50) => {
     }
   }, [streakLeaderboard]);
 
-  // Realtime subscription on profiles table
+  // If current user is not in top limit, fetch their exact rank by counting profiles above them
   useEffect(() => {
+    if (!user) {
+      setUserExactXpRank(undefined);
+      setUserExactStreakRank(undefined);
+      return;
+    }
+
+    const inXpList = xpLeaderboard.find(e => e.id === user.id);
+    const inStreakList = streakLeaderboard.find(e => e.id === user.id);
+
+    if (inXpList) {
+      setUserExactXpRank(inXpList.rank);
+    } else {
+      // Query exact rank for current user
+      supabase
+        .from('profiles')
+        .select('xp_points')
+        .eq('id', user.id)
+        .maybeSingle()
+        .then(({ data: userProf }) => {
+          if (userProf) {
+            const userXp = Number(userProf.xp_points || 0);
+            supabase
+              .from('profiles')
+              .select('id', { count: 'exact', head: true })
+              .gt('xp_points', userXp)
+              .then(({ count }) => {
+                setUserExactXpRank((count ?? 0) + 1);
+              });
+          }
+        });
+    }
+
+    if (inStreakList) {
+      setUserExactStreakRank(inStreakList.rank);
+    } else {
+      supabase
+        .from('profiles')
+        .select('streak_days')
+        .eq('id', user.id)
+        .maybeSingle()
+        .then(({ data: userProf }) => {
+          if (userProf) {
+            const userStreak = Number(userProf.streak_days || 0);
+            supabase
+              .from('profiles')
+              .select('id', { count: 'exact', head: true })
+              .gt('streak_days', userStreak)
+              .then(({ count }) => {
+                setUserExactStreakRank((count ?? 0) + 1);
+              });
+          }
+        });
+    }
+  }, [user, xpLeaderboard, streakLeaderboard]);
+
+  // Realtime subscription on profiles table and window event listeners
+  useEffect(() => {
+    const handleInvalidate = () => {
+      queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
+    };
+
+    window.addEventListener('levelhub:xp_updated', handleInvalidate);
+    window.addEventListener('levelhub:streak_updated', handleInvalidate);
+    window.addEventListener('levelhub:student_stats_updated', handleInvalidate);
+    window.addEventListener('levelhub:profile_updated', handleInvalidate);
+
     const channel = supabase
-      .channel('leaderboard-live-updates')
+      .channel('leaderboard-live-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
-        queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
+        handleInvalidate();
       })
       .subscribe();
 
     return () => {
+      window.removeEventListener('levelhub:xp_updated', handleInvalidate);
+      window.removeEventListener('levelhub:streak_updated', handleInvalidate);
+      window.removeEventListener('levelhub:student_stats_updated', handleInvalidate);
+      window.removeEventListener('levelhub:profile_updated', handleInvalidate);
       supabase.removeChannel(channel);
     };
   }, [queryClient]);
 
   const currentUserId = user?.id;
-  const currentUserXpRank = xpWithChanges.find(e => e.id === currentUserId)?.rank;
-  const currentUserStreakRank = streakWithChanges.find(e => e.id === currentUserId)?.rank;
+  const currentUserXpRank = userExactXpRank ?? xpWithChanges.find(e => e.id === currentUserId)?.rank;
+  const currentUserStreakRank = userExactStreakRank ?? streakWithChanges.find(e => e.id === currentUserId)?.rank;
 
   return {
     xpLeaderboard: xpWithChanges,
