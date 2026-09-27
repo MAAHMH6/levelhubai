@@ -3,15 +3,17 @@ import { supabase as mainSupabase } from './client';
 
 // New Feature Database Credentials
 const NEW_SUPABASE_URL = import.meta.env.VITE_NEW_SUPABASE_URL || 'https://jqscjbaondlknhrcbkuh.supabase.co';
-const NEW_SUPABASE_KEY = import.meta.env.VITE_NEW_SUPABASE_PUBLISHABLE_KEY || '';
+const NEW_SUPABASE_KEY = import.meta.env.VITE_NEW_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impxc2NqYmFvbmRsa25ocmNia3VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk2NTA1NjUsImV4cCI6MjEwNTIyNjU2NX0.LlTAztbdMYXIFolwpYZLHHkHHl85eRqOeRkNLqQEebk';
 
-export const featureSupabase = createClient(NEW_SUPABASE_URL, NEW_SUPABASE_KEY, {
-  auth: {
-    storage: localStorage,
-    persistSession: true,
-    autoRefreshToken: true,
-  },
-});
+export const featureSupabase = (NEW_SUPABASE_URL && NEW_SUPABASE_KEY)
+  ? createClient(NEW_SUPABASE_URL, NEW_SUPABASE_KEY, {
+      auth: {
+        storage: localStorage,
+        persistSession: true,
+        autoRefreshToken: true,
+      },
+    })
+  : mainSupabase;
 
 // TYPES FOR NEW FEATURES
 export interface StudyPlanItem {
