@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Home, 
@@ -42,6 +42,7 @@ import { IntroVideoPopup } from '@/components/onboarding/IntroVideoPopup';
 import { WeeklyReportExportModal } from '@/components/reporting/WeeklyReportExportModal';
 import { Footer } from '@/components/landing/Footer';
 import { StudentSubjectInterestModal } from '@/components/onboarding/StudentSubjectInterestModal';
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,9 +51,25 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { ChevronDown, ChevronRight, Layers, FileCode2, Tag, Clock, Search as SearchIcon } from 'lucide-react';
+
+const QUICK_ACCESS_SUB_TOOLS = [
+  { path: '/quick-access/exam-timetable-builder', label: 'Timetable Builder', icon: Calendar, color: 'text-purple-500' },
+  { path: '/quick-access/exam-countdown', label: 'Exam Countdown', icon: Zap, color: 'text-orange-500' },
+  { path: '/quick-access/flashcard-maker', label: 'Flashcards', icon: Layers, color: 'text-fuchsia-500' },
+  { path: '/quick-access/formula-sheet-hub', label: 'Formula Sheets', icon: FileCode2, color: 'text-blue-500' },
+  { path: '/quick-access/keyword-definition-lists', label: 'Keywords & Definitions', icon: Tag, color: 'text-teal-500' },
+  { path: '/quick-access/past-paper-finder', label: 'Past Paper Finder', icon: SearchIcon, color: 'text-emerald-500' },
+];
 
 const NAV_ITEMS = [
   { path: '/dashboard', label: 'Command Center', icon: Home },
+  { 
+    path: '/quick-access', 
+    label: 'Quick Access', 
+    icon: Sparkles,
+    isQuickAccess: true,
+  },
   { path: '/subjects-hub', label: 'Subjects', icon: BookOpen },
   { path: '/planner', label: 'Planner', icon: Calendar },
   { path: '/quiz', label: 'Quizzes', icon: Zap },
@@ -66,13 +83,16 @@ const NAV_ITEMS = [
 
 export const StudentAppLayout: React.FC = () => {
   const { profile, programmeLabel } = useStudentProgramme();
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const { isAdmin } = useAdmin();
   const sub = useSubscription();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [quickAccessExpanded, setQuickAccessExpanded] = useState(true);
+
+  const isQuickAccessActive = location.pathname.startsWith('/quick-access') || location.pathname.startsWith('/resources');
 
   const handleSignOut = async () => {
     await signOut();
@@ -104,6 +124,65 @@ export const StudentAppLayout: React.FC = () => {
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {NAV_ITEMS.map(item => {
             const Icon = item.icon;
+            
+            if (item.isQuickAccess) {
+              return (
+                <div key={item.path} className="space-y-0.5">
+                  <div
+                    onClick={() => {
+                      navigate('/quick-access');
+                      setQuickAccessExpanded(!quickAccessExpanded);
+                    }}
+                    className={`
+                      flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 cursor-pointer
+                      ${isQuickAccessActive 
+                        ? 'bg-teal-50 text-teal-800 dark:bg-teal-950/50 dark:text-teal-200 font-semibold shadow-xs border border-teal-200/60 dark:border-teal-800/60' 
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100/70 dark:hover:bg-slate-800/50'}
+                    `}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Icon className={`w-4 h-4 ${isQuickAccessActive ? 'text-teal-600 dark:text-teal-400' : 'text-slate-400 dark:text-slate-500'}`} />
+                      <span>{item.label}</span>
+                    </div>
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setQuickAccessExpanded(!quickAccessExpanded);
+                      }}
+                      className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                    >
+                      {quickAccessExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                    </span>
+                  </div>
+
+                  {/* Collapsible Sub Tools in Sidebar */}
+                  {quickAccessExpanded && (
+                    <div className="pl-6 pr-1 py-1 space-y-0.5 border-l-2 border-teal-500/30 ml-4 animate-in slide-in-from-top-1 duration-150">
+                      {QUICK_ACCESS_SUB_TOOLS.map(subTool => {
+                        const SubIcon = subTool.icon;
+                        const isSubActive = location.pathname === subTool.path || location.pathname.endsWith(subTool.path.replace('/quick-access', ''));
+                        return (
+                          <NavLink
+                            key={subTool.path}
+                            to={subTool.path}
+                            className={`
+                              flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all
+                              ${isSubActive 
+                                ? 'bg-teal-100/70 dark:bg-teal-900/40 text-teal-900 dark:text-teal-200 font-bold' 
+                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100/60 dark:hover:bg-slate-800/40'}
+                            `}
+                          >
+                            <SubIcon className={`w-3.5 h-3.5 ${subTool.color}`} />
+                            <span className="truncate">{subTool.label}</span>
+                          </NavLink>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
             const isActive = location.pathname.startsWith(item.path);
 
             return (
@@ -152,7 +231,7 @@ export const StudentAppLayout: React.FC = () => {
                 </div>
                 <div>
                   <div className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-none">
-                    {profile.streakDays} Day Streak
+                    {profile?.streakDays ?? 0} Day Streak
                   </div>
                   <div className="text-[10px] text-slate-400 dark:text-slate-500">Active today</div>
                 </div>
@@ -164,7 +243,7 @@ export const StudentAppLayout: React.FC = () => {
 
             <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-700/50">
               <span className="text-xs text-slate-500 dark:text-slate-400">Total XP</span>
-              <span className="text-xs font-bold text-teal-600 dark:text-teal-400">{profile.xpPoints.toLocaleString()} XP</span>
+              <span className="text-xs font-bold text-teal-600 dark:text-teal-400">{(profile?.xpPoints ?? 0).toLocaleString()} XP</span>
             </div>
           </div>
 
@@ -199,9 +278,46 @@ export const StudentAppLayout: React.FC = () => {
               </Button>
             </div>
 
-            <nav className="flex-1 px-3 py-4 space-y-1">
+            <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
               {NAV_ITEMS.map(item => {
                 const Icon = item.icon;
+
+                if (item.isQuickAccess) {
+                  return (
+                    <div key={item.path} className="space-y-1">
+                      <NavLink
+                        to={item.path}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={({ isActive }) => `
+                          flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium
+                          ${isQuickAccessActive 
+                            ? 'bg-teal-50 text-teal-800 dark:bg-teal-950/50 dark:text-teal-200 font-semibold' 
+                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100'}
+                        `}
+                      >
+                        <Icon className="w-4 h-4 text-teal-600" />
+                        <span>{item.label}</span>
+                      </NavLink>
+                      <div className="pl-6 space-y-0.5 border-l-2 border-teal-500/20 ml-4">
+                        {QUICK_ACCESS_SUB_TOOLS.map(subTool => {
+                          const SubIcon = subTool.icon;
+                          return (
+                            <NavLink
+                              key={subTool.path}
+                              to={subTool.path}
+                              onClick={() => setMobileMenuOpen(false)}
+                              className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-900 dark:hover:text-slate-200"
+                            >
+                              <SubIcon className={`w-3.5 h-3.5 ${subTool.color}`} />
+                              <span>{subTool.label}</span>
+                            </NavLink>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                }
+
                 return (
                   <NavLink
                     key={item.path}
@@ -273,10 +389,10 @@ export const StudentAppLayout: React.FC = () => {
             <div className="hidden sm:flex items-center gap-2 bg-slate-100 dark:bg-slate-800/80 px-3 py-1.5 rounded-full border border-slate-200/60 dark:border-slate-700/60">
               <span className="w-2 h-2 rounded-full bg-teal-500 animate-pulse" />
               <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                {programmeLabel}
+                {programmeLabel || 'Cambridge'}
               </span>
               <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 border-l border-slate-300 dark:border-slate-600 pl-2">
-                Exam {profile.examYear}
+                Exam {profile?.examYear || '2027'}
               </span>
             </div>
           </div>
@@ -335,13 +451,13 @@ export const StudentAppLayout: React.FC = () => {
             {/* Gamification Coins / Gems */}
             <div className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/70 dark:border-amber-800/60 px-2.5 py-1 rounded-full text-xs font-bold text-amber-700 dark:text-amber-300">
               <Coins className="w-3.5 h-3.5 text-amber-500" />
-              <span>{profile.coins}</span>
+              <span>{profile?.coins ?? 0}</span>
             </div>
 
             {/* Daily Streak Flame */}
             <div className="flex items-center gap-1.5 bg-orange-50 dark:bg-orange-950/40 border border-orange-200/70 dark:border-orange-800/60 px-2.5 py-1 rounded-full text-xs font-bold text-orange-700 dark:text-orange-300">
               <Flame className="w-3.5 h-3.5 text-orange-500 fill-orange-500" />
-              <span>{profile.streakDays}d</span>
+              <span>{profile?.streakDays ?? 0}d</span>
             </div>
 
             {/* Interactive Notifications Bell */}
@@ -370,17 +486,17 @@ export const StudentAppLayout: React.FC = () => {
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-2 p-0.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500/20">
                   <Avatar className="h-8 w-8 border border-slate-200 dark:border-slate-700">
-                    <AvatarImage src={profile.avatarUrl} />
+                    <AvatarImage src={profile?.avatarUrl} />
                     <AvatarFallback className="bg-teal-600 text-white text-xs font-bold">
-                      {profile.displayName.charAt(0).toUpperCase()}
+                      {(profile?.displayName || 'Student').charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64 mt-2 rounded-2xl shadow-xl border-slate-200 dark:border-slate-800 p-2 space-y-1">
                 <DropdownMenuLabel className="p-2">
-                  <div className="font-bold text-sm text-slate-900 dark:text-white">{profile.displayName}</div>
-                  <div className="text-xs text-teal-600 font-semibold">{programmeLabel} • Exam {profile.examYear}</div>
+                  <div className="font-bold text-sm text-slate-900 dark:text-white">{profile?.displayName || 'Student'}</div>
+                  <div className="text-xs text-teal-600 font-semibold">{programmeLabel || 'Cambridge'} • Exam {profile?.examYear || '2027'}</div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate('/account?tab=profile')} className="rounded-xl cursor-pointer">
@@ -442,7 +558,9 @@ export const StudentAppLayout: React.FC = () => {
 
         {/* MAIN OUTLET CONTAINER */}
         <main className="flex-1 p-4 sm:p-8 max-w-7xl w-full mx-auto">
-          <Outlet />
+          <ErrorBoundary fallbackTitle="Student Command Center View">
+            <Outlet />
+          </ErrorBoundary>
         </main>
 
         {/* ALWAYS-ON MAIN WEBSITE FOOTER (WITHOUT CTA BAR IN STUDENT PLATFORM) */}

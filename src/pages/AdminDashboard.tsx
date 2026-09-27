@@ -34,6 +34,7 @@ import QuizHistoryManager from "@/components/admin/QuizHistoryManager";
 import BadgesManager from "@/components/admin/BadgesManager";
 import { FlashcardsCheatsheetManager } from "@/components/admin/FlashcardsCheatsheetManager";
 import { FinalCurriculumTreeTab } from "@/components/admin/FinalCurriculumTreeTab";
+import { ResourcesManager } from "@/components/admin/ResourcesManager";
 import { Award, GitBranch } from "lucide-react";
 
 const AdminDashboard = () => {
@@ -77,6 +78,9 @@ const AdminDashboard = () => {
       <div className="max-w-7xl mx-auto px-4 py-6">
         <Tabs defaultValue="activity" className="space-y-6">
           <TabsList className="flex flex-wrap h-auto gap-1">
+            <TabsTrigger value="resources" className="flex items-center gap-1.5 font-bold text-teal-600 dark:text-teal-400 bg-teal-500/10 border border-teal-500/30">
+              <BookOpen className="h-4 w-4" /> 📚 Resources (Study Tools)
+            </TabsTrigger>
             <TabsTrigger value="activity" className="flex items-center gap-1.5">
               <Activity className="h-4 w-4" /> Activity
             </TabsTrigger>
@@ -164,6 +168,7 @@ const AdminDashboard = () => {
           </TabsList>
 
 
+          <TabsContent value="resources"><ResourcesManager /></TabsContent>
           <TabsContent value="activity"><ActivityDashboard /></TabsContent>
           <TabsContent value="subjects"><SubjectsManager /></TabsContent>
           <TabsContent value="units"><UnitsManager /></TabsContent>

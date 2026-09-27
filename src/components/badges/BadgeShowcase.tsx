@@ -69,7 +69,7 @@ export const BadgeShowcase = () => {
             <motion.div
               className="h-full bg-gradient-to-r from-primary to-primary/70 rounded-full"
               initial={{ width: 0 }}
-              animate={{ width: `${(earnedCount / totalCount) * 100}%` }}
+              animate={{ width: `${totalCount > 0 ? (earnedCount / totalCount) * 100 : 0}%` }}
               transition={{ duration: 1, ease: 'easeOut' }}
             />
           </div>

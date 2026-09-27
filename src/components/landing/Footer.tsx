@@ -21,28 +21,29 @@ const socialIcon: Record<string, any> = {
 
 const footerLinks = {
   product: [
-    { name: "Features", href: "#" },
-    { name: "Subjects", href: "#" },
-    { name: "Pricing", href: "#" },
-    { name: "Mobile App", href: "#" },
+    { name: "Features", href: "/features" },
+    { name: "Subjects Catalogue", href: "/subjects" },
+    { name: "Pricing Plans", href: "/pricing" },
+    { name: "AI Tutor & Quizzes", href: "/features" },
   ],
   resources: [
-    { name: "Past Papers", href: "#" },
-    { name: "Study Guides", href: "#" },
-    { name: "Blog", href: "/blog" },
-    { name: "Help Center", href: "#" },
+    { name: "Exam Timetable Builder", href: "/tools/exam-timetable-builder" },
+    { name: "Exam Countdown 2026", href: "/tools/exam-countdown" },
+    { name: "Smart Flashcard Maker", href: "/tools/flashcard-maker" },
+    { name: "Formula Sheet Hub", href: "/tools/formula-sheet-hub" },
+    { name: "Keyword & Definitions", href: "/tools/keyword-definition-lists" },
+    { name: "Past Paper Finder", href: "/tools/past-paper-finder" },
+    { name: "Cambridge Blog", href: "/blog" },
   ],
   company: [
-    { name: "About Us", href: "#" },
-    { name: "Careers", href: "#" },
-    { name: "Press", href: "#" },
-    { name: "Contact", href: "#" },
+    { name: "About Us", href: "/about" },
+    { name: "Why LevelHubAI", href: "/about" },
+    { name: "Contact Support", href: "/pricing" },
   ],
   legal: [
     { name: "Privacy Policy", href: "/privacy-policy" },
     { name: "Terms of Service", href: "/terms-of-service" },
     { name: "Cookie Policy", href: "/cookie-policy" },
-    { name: "Do Not Sell My Info", href: "/cookie-policy" },
   ],
 };
 
@@ -68,7 +69,7 @@ export const Footer = ({ hideCta = false }: FooterProps) => {
                 Ready to Level Up Your Learning?
               </h2>
               <p className="text-primary-foreground/80 max-w-xl mx-auto mb-8">
-                Join 50,000+ students already acing their exams with LevelHubAI. Start your free trial today.
+                Join 50,000+ students already acing their exams with LevelHubAI. Start learning free today.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Button variant="accent" size="xl" asChild>
@@ -143,22 +144,22 @@ export const Footer = ({ hideCta = false }: FooterProps) => {
             <ul className="space-y-3">
               {footerLinks.product.map((link) => (
                 <li key={link.name}>
-                  <a href={link.href} className="text-background/60 hover:text-background transition-colors">
+                  <Link to={link.href} className="text-background/60 hover:text-background transition-colors">
                     {link.name}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
           </div>
 
           <div>
-            <h4 className="font-display font-semibold mb-4">Resources</h4>
+            <h4 className="font-display font-semibold mb-4">Study Tools</h4>
             <ul className="space-y-3">
               {footerLinks.resources.map((link) => (
                 <li key={link.name}>
-                  <a href={link.href} className="text-background/60 hover:text-background transition-colors">
+                  <Link to={link.href} className="text-background/60 hover:text-background transition-colors">
                     {link.name}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -169,9 +170,9 @@ export const Footer = ({ hideCta = false }: FooterProps) => {
             <ul className="space-y-3">
               {footerLinks.company.map((link) => (
                 <li key={link.name}>
-                  <a href={link.href} className="text-background/60 hover:text-background transition-colors">
+                  <Link to={link.href} className="text-background/60 hover:text-background transition-colors">
                     {link.name}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>

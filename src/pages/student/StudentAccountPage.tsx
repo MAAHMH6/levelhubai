@@ -687,7 +687,7 @@ export const StudentAccountPage: React.FC = () => {
           }`}>
             <div>
               {sub.isPro ? (
-                <Badge className="bg-amber-500 text-slate-950 text-[10px] font-bold mb-2">LevelHub Pro Plan 👑</Badge>
+                <Badge className="bg-amber-500 text-slate-950 text-[10px] font-bold mb-2">LevelHubAI Pro Plan 👑</Badge>
               ) : (
                 <Badge className="bg-teal-600 text-white text-[10px] font-bold mb-2">Free Plan</Badge>
               )}
@@ -728,7 +728,7 @@ export const StudentAccountPage: React.FC = () => {
               </h4>
             </div>
             <p className="text-xs text-slate-500">
-              Share your personal link with classmates. When they sign up, both of you get 1 free month of LevelHub Pro!
+              Share your personal link with classmates. When they sign up, both of you get 1 free month of LevelHubAI Pro!
             </p>
             <div className="flex items-center gap-2 max-w-md">
               <Input

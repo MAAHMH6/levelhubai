@@ -1,4 +1,5 @@
-import { Star, Quote } from "lucide-react";
+import React from "react";
+import { Star, Quote, HeartHandshake, Sparkles } from "lucide-react";
 
 const testimonials = [
   {
@@ -45,72 +46,81 @@ const testimonials = [
   },
 ];
 
-export const Testimonials = () => {
+export const Testimonials: React.FC = () => {
   return (
-    <section className="py-24 bg-secondary/30">
-      <div className="container mx-auto px-4">
+    <section className="py-24 relative bg-background text-foreground overflow-hidden" id="testimonials">
+      {/* Background Glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-teal-500/5 rounded-full blur-3xl pointer-events-none" />
+
+      <div className="container mx-auto px-4 max-w-6xl relative z-10">
         {/* Section Header */}
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 bg-xp/10 rounded-full px-4 py-2 mb-6">
-            <Star className="w-4 h-4 text-xp fill-xp" />
-            <span className="text-sm font-medium text-foreground">O-Level & IGCSE Success Stories</span>
+        <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-600 dark:text-teal-400 text-xs font-bold tracking-wide uppercase">
+            <HeartHandshake className="w-3.5 h-3.5" />
+            <span>O-Level & IGCSE Success Stories</span>
           </div>
-          <h2 className="font-display text-4xl md:text-5xl font-bold mb-4">
-            Loved by O-Level & IGCSE{" "}
-            <span className="text-gradient-primary">Students</span>
+
+          <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-foreground">
+            Loved by O-Level & IGCSE <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-500 via-indigo-600 to-purple-600">
+              Students Across Pakistan
+            </span>
           </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+
+          <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
             Join thousands of Pakistani O-Level & IGCSE students who transformed their Cambridge exam prep with LevelHubAI.
           </p>
         </div>
 
-
-        {/* Testimonials Grid */}
-        <div className="grid md:grid-cols-2 gap-6">
+        {/* Testimonials Grid (6 cards) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {testimonials.map((testimonial, i) => (
             <div
               key={i}
-              className="bg-card rounded-2xl p-8 border border-border/50 relative overflow-hidden group hover:shadow-xl transition-all duration-300"
+              className="bg-card rounded-3xl p-7 border border-border hover:border-teal-500/40 transition-all duration-300 shadow-md relative overflow-hidden group flex flex-col justify-between hover:-translate-y-1"
             >
-              <Quote className="absolute top-6 right-6 w-12 h-12 text-primary/10" />
-              
-              <div className="flex gap-1 mb-4">
-                {[...Array(testimonial.rating)].map((_, j) => (
-                  <Star key={j} className="w-5 h-5 text-xp fill-xp" />
-                ))}
+              <Quote className="absolute top-6 right-6 w-9 h-9 text-muted/20 pointer-events-none" />
+
+              <div>
+                <div className="flex gap-1 mb-4">
+                  {[...Array(testimonial.rating)].map((_, j) => (
+                    <Star key={j} className="w-4 h-4 text-amber-500 fill-amber-500" />
+                  ))}
+                </div>
+
+                <p className="text-sm text-foreground mb-6 leading-relaxed relative z-10">
+                  "{testimonial.text}"
+                </p>
               </div>
 
-              <p className="text-foreground mb-6 leading-relaxed relative z-10">
-                "{testimonial.text}"
-              </p>
-
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3.5 pt-4 border-t border-border/80">
                 <img
                   src={testimonial.image}
                   alt={testimonial.name}
-                  className="w-12 h-12 rounded-full bg-secondary"
+                  className="w-11 h-11 rounded-2xl bg-muted/60 border border-border shadow-xs shrink-0"
                 />
                 <div>
-                  <p className="font-display font-semibold text-foreground">{testimonial.name}</p>
-                  <p className="text-sm text-muted-foreground">{testimonial.role}</p>
+                  <p className="text-sm font-bold text-foreground">{testimonial.name}</p>
+                  <p className="text-xs text-muted-foreground">{testimonial.role}</p>
                 </div>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Stats Bar */}
-        <div className="mt-16 bg-card rounded-2xl p-8 border border-border/50">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+        {/* Stats Bar (3 Stats Only, Skipping Schools Trust Us) */}
+        <div className="mt-16 bg-card rounded-3xl p-8 border border-border shadow-xl">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 text-center divide-y sm:divide-y-0 sm:divide-x divide-border">
             {[
-              { value: "4.9/5", label: "Average Rating" },
-              { value: "50K+", label: "Happy Students" },
-              { value: "95%", label: "Recommend Us" },
-              { value: "500+", label: "Schools Trust Us" },
+              { value: "4.9/5", label: "Average Student Rating" },
+              { value: "50K+", label: "Happy Cambridge Students" },
+              { value: "95%", label: "Recommend LevelHubAI" },
             ].map((stat, i) => (
-              <div key={i}>
-                <p className="font-display text-3xl md:text-4xl font-bold text-gradient-primary">{stat.value}</p>
-                <p className="text-sm text-muted-foreground mt-1">{stat.label}</p>
+              <div key={i} className={i > 0 ? "pt-6 sm:pt-0 sm:pl-8" : ""}>
+                <p className="font-display text-3xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-teal-500 via-indigo-600 to-purple-600">
+                  {stat.value}
+                </p>
+                <p className="text-xs sm:text-sm font-semibold text-muted-foreground mt-1.5">{stat.label}</p>
               </div>
             ))}
           </div>

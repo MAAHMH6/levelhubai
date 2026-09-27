@@ -59,8 +59,11 @@ import { StudentGamificationPage } from "./pages/student/StudentGamificationPage
 import { StudentAccountPage } from "./pages/student/StudentAccountPage";
 import { StudentUpgradePage } from "./pages/student/StudentUpgradePage";
 import { StudentBillingPage } from "./pages/student/StudentBillingPage";
+import { StudentResourcesPage } from "./pages/student/StudentResourcesPage";
+import { PublicResourceSeoPage } from "./pages/public/PublicResourceSeoPage";
 import { FloatingWhatsAppButton } from "./components/common/FloatingWhatsAppButton";
 import { FloatingReportIssueButton } from "./components/common/FloatingReportIssueButton";
+import { ErrorBoundary } from "./components/common/ErrorBoundary";
 
 const queryClient = new QueryClient();
 
@@ -81,6 +84,7 @@ const App = () => (
           <CookieConsent />
           <FloatingReportIssueButton />
           <FloatingWhatsAppButton />
+          <ErrorBoundary fallbackTitle="LevelHubAI Page View">
             <Routes>
               {/* PUBLIC SEO CANONICAL ROUTES (INDEXED & CRAWLED BY GOOGLE) */}
               <Route path="/" element={<Index />} />
@@ -93,6 +97,9 @@ const App = () => (
               <Route path="/blog/:slug" element={<BlogArticle />} />
               <Route path="/subjects" element={<SubjectsPage />} />
               <Route path="/subjects-catalogue" element={<SubjectsPage />} />
+              <Route path="/tools" element={<PublicResourceSeoPage />} />
+              <Route path="/tools/:toolSlug" element={<PublicResourceSeoPage />} />
+              <Route path="/resources-info/:toolSlug" element={<PublicResourceSeoPage />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/terms-of-service" element={<TermsOfService />} />
               <Route path="/cookie-policy" element={<CookiePolicy />} />
@@ -130,6 +137,12 @@ const App = () => (
                 <Route path="/account" element={<StudentAccountPage />} />
                 <Route path="/billing" element={<StudentBillingPage />} />
                 <Route path="/upgrade" element={<StudentUpgradePage />} />
+                <Route path="/quick-access" element={<StudentResourcesPage />} />
+                <Route path="/quick-access/:toolId" element={<StudentResourcesPage />} />
+                <Route path="/resources" element={<StudentResourcesPage />} />
+                <Route path="/resources/:toolId" element={<StudentResourcesPage />} />
+                <Route path="/free-tools" element={<StudentResourcesPage />} />
+                <Route path="/past-papers" element={<StudentResourcesPage />} />
                 <Route path="/subjects-hub" element={<StudentSubjectsCatalogue />} />
                 {/* SUBJECT WORKSPACE — New UI inside Student Layout */}
                 <Route path="/subjects/:subjectSlug" element={<StudentSubjectWorkspace />} />
@@ -152,7 +165,8 @@ const App = () => (
               {/* CATCH-ALL 404 */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-            </BrowserRouter>
+          </ErrorBoundary>
+          </BrowserRouter>
           </TooltipProvider>
         </LanguageProvider>
         </StudentProgrammeProvider>

@@ -13,6 +13,7 @@ dist-ssr
 *.local
 .env
 .env.*
+!.env.example
 .env.local
 
 # Editor directories and files
@@ -51,3 +52,13 @@ scratch/
 check.js
 fetch_logs.ts
 .scannerwork/
+audit_both_dbs.cjs
+audit_results.json
+audit_deep_subjects*
+test_feature_db.cjs
+*.timestamp-*.mjs
+check_error.js
+scratch_query.mjs
+query.mjs
+test.js
+test_sitemap.js

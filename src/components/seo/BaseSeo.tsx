@@ -9,7 +9,7 @@ export function BaseSeo() {
     "@context": "https://schema.org",
     "@type": "EducationalOrganization",
     "name": "LevelHubAI",
-    "alternateName": "LevelHub AI",
+    "alternateName": "LevelHubAI",
     "description": "AI-powered Cambridge O Level, IGCSE and A Level exam preparation platform with past papers, AI-generated notes and quizzes, and a personal AI tutor.",
     "url": baseUrl,
     "educationalCredentialAwarded": ["Cambridge O Level", "Cambridge IGCSE", "Cambridge A Level"],

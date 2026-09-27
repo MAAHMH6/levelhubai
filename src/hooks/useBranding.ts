@@ -15,7 +15,7 @@ export interface Branding {
 
 const DEFAULT: Branding = {
   brand_name: "LevelHubAI",
-  short_name: "LevelHub AI",
+  short_name: "LevelHubAI",
   logo_url: defaultLogo,
   favicon_url: "/logo.png",
   footer_copyright: `© ${new Date().getFullYear()} LevelHubAI (Cybertrends SMC PVT LTD). All rights reserved.`,

@@ -161,11 +161,9 @@ const SYLLABUS_CODES: Record<string, string> = {
   'urdu second lang igcse': '0539',
 
   // A Level Canonical Codes (18 Subjects)
-  'english language': '9093',
   'english language a-level': '9093',
   'mathematics a-level': '9709',
   'urdu a-level': '9686',
-  'urdu': '9686',
   'chemistry a-level': '9701',
   'physics a-level': '9702',
   'biology a-level': '9700',
@@ -173,7 +171,6 @@ const SYLLABUS_CODES: Record<string, string> = {
   'further mathematics a-level': '9231',
   'economics a-level': '9708',
   'business a-level': '9609',
-  'business': '9609',
   'literature in english a-level': '9695',
   'sociology a-level': '9699',
   'information technology a-level': '9626',

@@ -50,61 +50,59 @@ export const Subjects = () => {
   const getSubjectSlug = (name: string) =>
     name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
-  // Resolve subjects for active programme with 100% unique, non-duplicating colors
+  // Exact rainbow spectral progression across subjects
+  const RAINBOW_SPECTRUM = [
+    "#EF4444", // 1. Crimson Red
+    "#F97316", // 2. Bright Orange
+    "#FB923C", // 3. Amber Orange
+    "#F59E0B", // 4. Warm Gold
+    "#EAB308", // 5. Golden Yellow
+    "#84CC16", // 6. Vibrant Lime
+    "#22C55E", // 7. Fresh Green
+    "#10B981", // 8. Emerald Green
+    "#14B8A6", // 9. Vibrant Teal
+    "#06B6D4", // 10. Aqua Cyan
+    "#0EA5E9", // 11. Vivid Sky Blue
+    "#3B82F6", // 12. Cobalt Electric Blue
+    "#2563EB", // 13. Royal Sapphire Blue
+    "#6366F1", // 14. Deep Indigo
+    "#8B5CF6", // 15. Vivid Violet
+    "#A855F7", // 16. Electric Purple
+    "#C026D3", // 17. Orchid Purple
+    "#D946EF", // 18. Vivid Magenta Fuchsia
+    "#EC4899", // 19. Hot Pink
+    "#F43F5E", // 20. Deep Rose
+    "#E11D48", // 21. Crimson Rose
+    "#BE123C", // 22. Deep Ruby
+  ];
+
+  // Resolve subjects for active programme with continuous rainbow color alignment
   const programmeSubjects = useMemo<DisplaySubject[]>(() => {
-    if (activeProgramme === "o_level") {
-      return CANONICAL_O_LEVEL_SUBJECTS.map((spec) => {
-        const dbMatch = dbSubjects.find(
-          (s) =>
-            s.id === spec.id ||
-            (s.subject_code && s.subject_code.trim() === spec.code && (s.qualification === "o_level" || s.qualification === "both"))
-        );
-        return {
-          id: dbMatch?.id || spec.id,
-          name: spec.name,
-          code: spec.code,
-          qualification: "o_level",
-          color: spec.hex, // Guaranteed unique non-duplicate color
-          icon: spec.icon,
-          order: spec.order,
-          slug: getSubjectSlug(spec.name),
-        };
-      });
-    }
+    const list =
+      activeProgramme === "o_level"
+        ? CANONICAL_O_LEVEL_SUBJECTS
+        : activeProgramme === "igcse"
+        ? CANONICAL_IGCSE_SUBJECTS
+        : CANONICAL_A_LEVEL_SUBJECTS;
 
-    if (activeProgramme === "igcse") {
-      return CANONICAL_IGCSE_SUBJECTS.map((spec) => {
-        const dbMatch = dbSubjects.find(
-          (s) =>
-            s.id === spec.id ||
-            (s.subject_code && s.subject_code.trim() === spec.code && (s.qualification === "igcse" || s.qualification === "both"))
-        );
-        return {
-          id: dbMatch?.id || spec.id,
-          name: spec.name,
-          code: spec.code,
-          qualification: "igcse",
-          color: spec.hex, // Guaranteed unique non-duplicate color
-          icon: spec.icon,
-          order: spec.order,
-          slug: getSubjectSlug(spec.name),
-        };
-      });
-    }
-
-    // A Level
-    return CANONICAL_A_LEVEL_SUBJECTS.map((spec) => {
+    return list.map((spec, idx) => {
       const dbMatch = dbSubjects.find(
         (s) =>
           s.id === spec.id ||
-          (s.subject_code && s.subject_code.trim() === spec.code && s.qualification === "a_level")
+          (s.subject_code &&
+            s.subject_code.trim() === spec.code &&
+            (s.qualification === activeProgramme || s.qualification === "both"))
       );
+
+      // Rainbow color assigned sequentially across the catalogue
+      const rainbowColor = RAINBOW_SPECTRUM[idx % RAINBOW_SPECTRUM.length];
+
       return {
         id: dbMatch?.id || spec.id,
         name: spec.name,
         code: spec.code,
-        qualification: "a_level",
-        color: spec.hex, // Guaranteed unique non-duplicate color
+        qualification: activeProgramme,
+        color: rainbowColor,
         icon: spec.icon,
         order: spec.order,
         slug: getSubjectSlug(spec.name),
@@ -120,22 +118,27 @@ export const Subjects = () => {
       : "Cambridge International A Level";
 
   return (
-    <section className="py-24 bg-gradient-to-b from-background via-muted/20 to-background relative overflow-hidden">
+    <section className="py-24 bg-gradient-to-b from-background via-muted/20 to-background relative overflow-hidden" id="subjects">
       {/* Decorative ambient background glows */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[350px] bg-primary/5 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="container mx-auto px-4 relative z-10">
-        {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-12">
-          <div className="inline-flex items-center gap-2 bg-teal-50 dark:bg-teal-950/60 border border-teal-200/80 dark:border-teal-800 text-teal-700 dark:text-teal-300 rounded-full px-4 py-1.5 mb-5 shadow-xs">
-            <Sparkles className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-            <span className="text-xs font-bold uppercase tracking-wider">Cambridge Official Curriculum</span>
+      <div className="container mx-auto px-4 max-w-7xl relative z-10">
+        {/* Section Header - Organized like the other sections */}
+        <div className="text-center max-w-3xl mx-auto mb-14 space-y-4">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>Authoritative Cambridge Curriculum</span>
           </div>
-          <h2 className="font-display text-4xl md:text-5xl font-black tracking-tight text-foreground mb-4">
-            Master Every Subject Across All 3 Programmes
+
+          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight">
+            Explore All Subjects Across{" "}
+            <span className="bg-gradient-to-r from-primary via-purple-600 to-pink-500 bg-clip-text text-transparent">
+              All 3 Cambridge Programmes
+            </span>
           </h2>
-          <p className="text-base md:text-lg text-muted-foreground leading-relaxed">
-            Switch between Cambridge programmes below. Every subject features complete syllabus coverage, curated video lectures, topical practice, and exam mocks.
+
+          <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
+            Switch between Cambridge programmes below. Every subject features official Cambridge syllabus codes, topical past papers, curated video lessons, and instant AI method marking.
           </p>
         </div>
 

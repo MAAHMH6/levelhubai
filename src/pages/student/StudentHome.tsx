@@ -25,7 +25,8 @@ import {
   Brain,
   Timer,
   TrendingUp,
-  TrendingDown
+  TrendingDown,
+  Calendar
 } from 'lucide-react';
 import { useStudentProgramme, SubjectItem } from '@/contexts/StudentProgrammeContext';
 import { featureStorage, StudyPlanItem } from '@/integrations/supabase/featureClient';
@@ -40,6 +41,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { WeeklyReportExportModal } from '@/components/reporting/WeeklyReportExportModal';
 import { BadgeShowcase } from '@/components/badges/BadgeShowcase';
 import { ProfileCompletionPopup, isProfileAlreadyComplete } from '@/components/onboarding/ProfileCompletionPopup';
+import { FreeStudyToolsModal } from '@/components/landing-v2/FreeStudyToolsModal';
 import { useSubscription } from '@/hooks/useSubscription';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -58,6 +60,7 @@ export const StudentHome: React.FC = () => {
   const [mockStats, setMockStats] = useState({ totalMocks: 0 });
   const [lessonsCompletedCount, setLessonsCompletedCount] = useState(0);
   const [showProfileCompletion, setShowProfileCompletion] = useState(false);
+  const [freeToolsModalOpen, setFreeToolsModalOpen] = useState(false);
 
   // Show profile completion popup on first visit after login
   useEffect(() => {
@@ -71,13 +74,13 @@ export const StudentHome: React.FC = () => {
   const displayedHomeSubjects = useMemo(() => {
     const pool = freeSubjects && freeSubjects.length > 0 
       ? freeSubjects 
-      : subjects.filter(s => s.isCore);
+      : (subjects || []).filter(s => s.isCore);
     return [...pool].sort((a, b) => (a.display_order ?? 999) - (b.display_order ?? 999)).slice(0, 3);
   }, [freeSubjects, subjects]);
 
   // Load real academic stats
   useEffect(() => {
-    const userId = user?.id || profile.id;
+    const userId = user?.id || profile?.id;
     if (!userId || userId === 'guest_student') return;
     const loadStats = async () => {
       try {
@@ -96,12 +99,13 @@ export const StudentHome: React.FC = () => {
       } catch (e) { /* silent */ }
     };
     loadStats();
-  }, [user?.id, profile.id]);
+  }, [user?.id, profile?.id]);
 
   // Compute real exam countdown from profile
   const examCountdownDays = (() => {
-    const year = parseInt(profile.examYear) || new Date().getFullYear();
-    const month = profile.examSession?.toLowerCase().includes('nov') ? 10 : 4; // Oct=10 for Nov, Apr=4 for May/Jun
+    const year = parseInt(profile?.examYear || '2027') || new Date().getFullYear();
+    const sessionStr = String(profile?.examSession || 'may').toLowerCase();
+    const month = sessionStr.includes('nov') ? 10 : 4; // Oct=10 for Nov, Apr=4 for May/Jun
     const examDate = new Date(year, month, 15);
     const today = new Date();
     const diff = Math.ceil((examDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
@@ -111,12 +115,12 @@ export const StudentHome: React.FC = () => {
   // Load today's mission tasks from feature storage (real data only)
   useEffect(() => {
     const loadTasks = async () => {
-      const plans = await featureStorage.getStudyPlans(profile.id, profile.programme);
+      const plans = await featureStorage.getStudyPlans(profile?.id || 'guest_student', profile?.programme || 'igcse');
       // Only set real saved plans — no fake defaults
-      setTodayTasks(plans.slice(0, 3));
+      setTodayTasks((plans || []).slice(0, 3));
     };
     loadTasks();
-  }, [profile.id, profile.programme]);
+  }, [profile?.id, profile?.programme]);
 
   const handleToggleTask = async (taskId: string) => {
     await featureStorage.toggleStudyPlanComplete(taskId);
@@ -126,13 +130,15 @@ export const StudentHome: React.FC = () => {
     toast.success('Task progress updated!');
   };
 
-  const resumeSubject = coreSubjects[0] || subjects[0];
+  const resumeSubject = coreSubjects?.[0] || subjects?.[0];
 
   // XP progress to next level
+  const currentLvl = profile?.level || 1;
+  const currentXp = profile?.xpPoints || 0;
   const getXpForNextLevel = (lvl: number) => lvl * 1000;
-  const currentLvlXpFloor = (profile.level - 1) * 1000;
-  const nextLvlXpCeil = getXpForNextLevel(profile.level);
-  const xpInCurrentLevel = Math.max(0, profile.xpPoints - currentLvlXpFloor);
+  const currentLvlXpFloor = (currentLvl - 1) * 1000;
+  const nextLvlXpCeil = getXpForNextLevel(currentLvl);
+  const xpInCurrentLevel = Math.max(0, currentXp - currentLvlXpFloor);
   const xpPercent = Math.min(100, Math.round((xpInCurrentLevel / (nextLvlXpCeil - currentLvlXpFloor)) * 100));
 
   return (
@@ -170,15 +176,15 @@ export const StudentHome: React.FC = () => {
               <img src="/logo.png" alt="LevelHubAI Logo" className="h-10 w-auto object-contain brightness-110" />
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-xs font-semibold text-teal-200">
                 <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
-                {programmeLabel} • {profile.examSession} {profile.examYear}
+                {programmeLabel || 'Cambridge'} • {profile?.examSession || 'May / June'} {profile?.examYear || '2027'}
               </div>
             </div>
 
             <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-              Welcome back, {profile.displayName} 👋
+              Welcome back, {profile?.displayName || 'Student'} 👋
             </h1>
             <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-              Target Cambridge Grade: <span className="text-teal-300 font-extrabold">{profile.targetGrade}</span>. Access your diagnostic assessment, smart quizzes, mock exams, and AI tutor right away.
+              Target Cambridge Grade: <span className="text-teal-300 font-extrabold">{profile?.targetGrade || 'A*'}</span>. Access your diagnostic assessment, smart quizzes, mock exams, and AI tutor right away.
             </p>
 
             <div className="pt-2 flex flex-wrap items-center gap-3">
@@ -358,19 +364,19 @@ export const StudentHome: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-teal-50 dark:bg-teal-950/50 flex items-center justify-center text-teal-600 font-black text-sm">
-                  {profile.level}
+                  {profile?.level || 1}
                 </div>
                 <div>
                   <div className="text-sm font-bold text-slate-900 dark:text-white">
-                    Level {profile.level} Cambridge Scholar
+                    Level {profile?.level || 1} Cambridge Scholar
                   </div>
                   <div className="text-[11px] text-slate-400">
-                    {profile.xpPoints.toLocaleString()} Total XP Points
+                    {(profile?.xpPoints ?? 0).toLocaleString()} Total XP Points
                   </div>
                 </div>
               </div>
               <Badge variant="secondary" className="text-xs font-bold text-teal-700 bg-teal-50">
-                {nextLvlXpCeil - profile.xpPoints} XP to Level {profile.level + 1}
+                {nextLvlXpCeil - (profile?.xpPoints ?? 0)} XP to Level {(profile?.level || 1) + 1}
               </Badge>
             </div>
 
@@ -383,7 +389,7 @@ export const StudentHome: React.FC = () => {
               <Flame className="w-5 h-5 fill-orange-500 text-orange-500" />
             </div>
             <div>
-              <div className="text-lg font-black text-slate-900 dark:text-white">{profile.streakDays} Days</div>
+              <div className="text-lg font-black text-slate-900 dark:text-white">{profile?.streakDays ?? 0} Days</div>
               <div className="text-[11px] text-orange-700 dark:text-orange-300 font-semibold">Active Streak</div>
             </div>
           </div>
@@ -395,7 +401,7 @@ export const StudentHome: React.FC = () => {
             </div>
             <div>
               <div className="text-lg font-black text-slate-900 dark:text-white">{examCountdownDays} Days</div>
-              <div className="text-[11px] text-purple-700 dark:text-purple-300 font-semibold">{profile.examSession} {profile.examYear}</div>
+              <div className="text-[11px] text-purple-700 dark:text-purple-300 font-semibold">{profile?.examSession || 'May / June'} {profile?.examYear || '2027'}</div>
             </div>
           </div>
         </div>
@@ -623,7 +629,7 @@ export const StudentHome: React.FC = () => {
                           {leaderboardTab === 'xp' ? (
                             <span className="flex items-center gap-1 text-slate-900 dark:text-white">
                               <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                              <span>{entry.xp_points.toLocaleString()}</span>
+                              <span>{(entry.xp_points ?? 0).toLocaleString()}</span>
                             </span>
                           ) : (
                             <span className="flex items-center gap-1 text-orange-500">
@@ -876,10 +882,106 @@ export const StudentHome: React.FC = () => {
         </div>
       </Card>
 
+      {/* 8. FREE CAMBRIDGE STUDY & EXAM TOOLS */}
+      <Card className="rounded-3xl border-slate-200/80 dark:border-slate-800 bg-gradient-to-r from-slate-900 via-slate-900 to-teal-950 p-6 sm:p-7 shadow-md text-white space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-500/20 text-teal-300 text-[11px] font-bold uppercase mb-2">
+              <Sparkles className="w-3.5 h-3.5" />
+              100% Free For All Students
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
+              Free Cambridge Study & Exam Tools
+            </h2>
+            <p className="text-xs text-slate-300 mt-1 max-w-xl">
+              Interactive tools to search past papers, build study timetables, track threshold boundaries, and download syllabus formula sheets.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => setFreeToolsModalOpen(true)}
+              variant="outline"
+              className="rounded-xl text-xs font-bold border-slate-700 bg-slate-800/90 text-white hover:bg-slate-700"
+            >
+              Quick Popup
+            </Button>
+            <Button
+              onClick={() => navigate('/resources')}
+              className="rounded-xl text-xs font-black px-5 bg-teal-500 hover:bg-teal-400 text-slate-950 shadow-md gap-1.5"
+            >
+              <span>Explore All Tools</span>
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* 4 Quick Highlight Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+          <div
+            onClick={() => navigate('/quick-access/past-paper-finder')}
+            className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700/80 hover:border-teal-500/60 hover:bg-slate-800 cursor-pointer transition-all group"
+          >
+            <div className="w-8 h-8 rounded-xl bg-teal-500/20 text-teal-400 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+              <FileText className="w-4 h-4" />
+            </div>
+            <div className="text-xs font-bold text-white group-hover:text-teal-400 transition-colors">
+              Past Paper Finder
+            </div>
+            <div className="text-[10px] text-slate-400 mt-0.5">10 yrs of CIE papers</div>
+          </div>
+
+          <div
+            onClick={() => navigate('/quick-access/exam-timetable-builder')}
+            className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700/80 hover:border-purple-500/60 hover:bg-slate-800 cursor-pointer transition-all group"
+          >
+            <div className="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+              <Calendar className="w-4 h-4" />
+            </div>
+            <div className="text-xs font-bold text-white group-hover:text-purple-400 transition-colors">
+              Timetable Builder
+            </div>
+            <div className="text-[10px] text-slate-400 mt-0.5">Exam schedule planner</div>
+          </div>
+
+          <div
+            onClick={() => navigate('/quick-access/formula-sheet-hub')}
+            className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700/80 hover:border-blue-500/60 hover:bg-slate-800 cursor-pointer transition-all group"
+          >
+            <div className="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+              <BookOpen className="w-4 h-4" />
+            </div>
+            <div className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors">
+              Formula Sheet Hub
+            </div>
+            <div className="text-[10px] text-slate-400 mt-0.5">Maths, Physics & Chemistry</div>
+          </div>
+
+          <div
+            onClick={() => navigate('/quick-access/flashcard-maker')}
+            className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700/80 hover:border-fuchsia-500/60 hover:bg-slate-800 cursor-pointer transition-all group"
+          >
+            <div className="w-8 h-8 rounded-xl bg-fuchsia-500/20 text-fuchsia-400 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+              <Layers className="w-4 h-4" />
+            </div>
+            <div className="text-xs font-bold text-white group-hover:text-fuchsia-400 transition-colors">
+              Smart Flashcards
+            </div>
+            <div className="text-[10px] text-slate-400 mt-0.5">Active recall revision</div>
+          </div>
+        </div>
+      </Card>
+
       {/* Weekly Report Export Modal */}
       <WeeklyReportExportModal
         open={reportModalOpen}
         onOpenChange={setReportModalOpen}
+      />
+
+      {/* Free Study Tools Modal */}
+      <FreeStudyToolsModal
+        open={freeToolsModalOpen}
+        onOpenChange={setFreeToolsModalOpen}
       />
     </div>
   );
