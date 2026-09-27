@@ -41,24 +41,14 @@ ALTER TABLE "public"."subjects" ADD COLUMN IF NOT EXISTS "display_order" integer
 -- ==============================================================================
 -- 2. CANONICAL SUBJECTS RECONCILIATION (ALL 3 PROGRAMMES: 60 SUBJECTS)
 -- ==============================================================================
--- ==============================================================================
--- MASTER CANONICAL RECONCILIATION FOR ALL PROGRAMMES (ALL-AT-ONCE)
--- (Cambridge O Level 21 Subjects, Cambridge IGCSE 21 Subjects, Cambridge A Level 18 Subjects)
---
--- Features:
--- 1. Non-destructive: In-place UPDATE on all existing subjects preserving foreign keys,
---    UUIDs, curriculum, lessons, quizzes, and past papers.
--- 2. Safe container creation for missing syllabus codes (ON CONFLICT DO UPDATE).
--- 3. Professional color palettes with ZERO duplicate colors within any programme.
--- 4. O Level & IGCSE have the exact same roster of 21 subjects with different Cambridge codes.
--- 5. Includes Psychology in O Level (2090), IGCSE (0990), and A Level (9990).
+-- Non-destructive: In-place UPDATE on all existing subjects preserving foreign keys,
+-- UUIDs, curriculum, lessons, quizzes, and past papers.
+-- Safe container creation for missing syllabus codes (ON CONFLICT DO UPDATE).
 -- ==============================================================================
 
-BEGIN;
-
--- ==============================================================================
--- 1. CAMBRIDGE O LEVEL (21 CANONICAL SUBJECTS)
--- ==============================================================================
+-- ------------------------------------------------------------------------------
+-- 2A. CAMBRIDGE O LEVEL (21 CANONICAL SUBJECTS)
+-- ------------------------------------------------------------------------------
 
 -- In-place update on existing O Level subjects
 UPDATE public.subjects
@@ -1042,7 +1032,7 @@ DO $$ BEGIN
 END $$;
 
 -- ==============================================================================
--- 6. QUICK ACCESS TOOLS & STUDENT STUDY ASSETS SCHEMA
+-- 4. QUICK ACCESS TOOLS & STUDENT STUDY ASSETS SCHEMA
 -- ==============================================================================
 
 -- 1. Student Personal Exam Timetables
