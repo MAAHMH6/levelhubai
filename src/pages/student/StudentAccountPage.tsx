@@ -750,70 +750,9 @@ export const StudentAccountPage: React.FC = () => {
         </Card>
       )}
 
-      {/* TAB CONTENT: REFER A FRIEND */}
+      {/* TAB CONTENT: REFER A FRIEND (Original Old Platform Referral Center with Milestones & History) */}
       {activeTab === 'referral' && (
-        <Card className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-xs space-y-6">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 text-xs font-bold border border-teal-200/60">
-              <Gift className="w-3.5 h-3.5 text-teal-600" />
-              <span>Student Referral Program</span>
-            </div>
-            <h3 className="text-2xl font-black text-slate-900 dark:text-white">
-              Refer a Friend & Unlock Free Cambridge Pro
-            </h3>
-            <p className="text-sm text-slate-500 leading-relaxed max-w-xl">
-              Give your friends 1 free month of LevelHubAI Pro. For every friend who signs up and starts studying, you'll also get 1 free month added to your account + 500 bonus XP!
-            </p>
-          </div>
-
-          {/* Referral Link & Code Box */}
-          <div className="p-5 rounded-2xl border border-teal-200/80 dark:border-teal-900/60 bg-gradient-to-r from-teal-500/10 via-emerald-500/5 to-transparent space-y-3">
-            <div className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-              Your Personal Invite Link
-            </div>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-              <Input
-                value={`https://olevel.com.pk/auth?ref=${referralCode}`}
-                readOnly
-                className="font-mono text-xs rounded-xl bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 h-10"
-              />
-              <Button 
-                onClick={handleCopyReferral} 
-                className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold px-5 h-10 shrink-0 shadow-xs"
-              >
-                <Copy className="w-4 h-4 mr-1.5" />
-                Copy Link
-              </Button>
-            </div>
-          </div>
-
-          {/* How It Works Steps */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 space-y-1.5">
-              <div className="w-8 h-8 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 flex items-center justify-center font-black text-sm">
-                1
-              </div>
-              <div className="text-sm font-bold text-slate-800 dark:text-slate-200">Share Your Link</div>
-              <p className="text-xs text-slate-400">Send your invite link to classmates on WhatsApp, Telegram, or Discord.</p>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 space-y-1.5">
-              <div className="w-8 h-8 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 flex items-center justify-center font-black text-sm">
-                2
-              </div>
-              <div className="text-sm font-bold text-slate-800 dark:text-slate-200">Classmate Joins</div>
-              <p className="text-xs text-slate-400">They create a free account and choose their Cambridge programme.</p>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 space-y-1.5">
-              <div className="w-8 h-8 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 flex items-center justify-center font-black text-sm">
-                3
-              </div>
-              <div className="text-sm font-bold text-slate-800 dark:text-slate-200">You Both Get Pro</div>
-              <p className="text-xs text-slate-400">Instantly receive 1 Month of Free Pro access and 500 bonus XP points.</p>
-            </div>
-          </div>
-        </Card>
+        <StudentReferralCenter />
       )}
 
       {/* TAB CONTENT: PARENT CONNECT */}
