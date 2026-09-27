@@ -21,8 +21,8 @@ export interface LeaderboardEntry {
 // Exported for backward compatibility if referenced elsewhere
 export const ADMIN_TOP_STUDENTS: LeaderboardEntry[] = [];
 
-const XP_QUERY_KEY = (limit: number) => ['leaderboard', 'xp', limit];
-const STREAK_QUERY_KEY = (limit: number) => ['leaderboard', 'streak', limit];
+const XP_QUERY_KEY = (limit: number, userId?: string) => ['leaderboard', 'xp', limit, userId || 'anon'];
+const STREAK_QUERY_KEY = (limit: number, userId?: string) => ['leaderboard', 'streak', limit, userId || 'anon'];
 
 const fetchXpLeaderboard = async (limit: number): Promise<LeaderboardEntry[]> => {
   try {
@@ -114,13 +114,13 @@ export const useLeaderboard = (limit: number = 50) => {
   const [userExactStreakRank, setUserExactStreakRank] = useState<number | undefined>(undefined);
 
   const { data: xpLeaderboard = [], isLoading: xpLoading } = useQuery({
-    queryKey: XP_QUERY_KEY(limit),
+    queryKey: XP_QUERY_KEY(limit, user?.id),
     queryFn: () => fetchXpLeaderboard(limit),
     refetchInterval: 15_000,
   });
 
   const { data: streakLeaderboard = [], isLoading: streakLoading } = useQuery({
-    queryKey: STREAK_QUERY_KEY(limit),
+    queryKey: STREAK_QUERY_KEY(limit, user?.id),
     queryFn: () => fetchStreakLeaderboard(limit),
     refetchInterval: 15_000,
   });

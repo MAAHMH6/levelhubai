@@ -1,36 +1,40 @@
+import React from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Flame, Star, Crown, Medal } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
 import { useLeaderboard, LeaderboardEntry } from '@/hooks/useLeaderboard';
 import { cn } from '@/lib/utils';
 
-const getRankIcon = (rank: number) => {
-  switch (rank) {
-    case 1:
-      return <Crown className="w-5 h-5 text-yellow-500" />;
-    case 2:
-      return <Medal className="w-5 h-5 text-slate-400" />;
-    case 3:
-      return <Medal className="w-5 h-5 text-amber-600" />;
-    default:
-      return <span className="w-5 h-5 flex items-center justify-center text-sm font-bold text-muted-foreground">{rank}</span>;
+const getRankBadge = (rank: number) => {
+  if (rank === 1) {
+    return (
+      <span className="flex items-center justify-center gap-1 text-xs font-black text-amber-500">
+        <Crown className="w-4 h-4 fill-amber-500 text-amber-500" />
+        #1
+      </span>
+    );
   }
-};
-
-const getRankBg = (rank: number) => {
-  switch (rank) {
-    case 1:
-      return 'bg-gradient-to-r from-yellow-500/20 to-amber-500/10 border-yellow-500/30';
-    case 2:
-      return 'bg-gradient-to-r from-slate-400/20 to-slate-300/10 border-slate-400/30';
-    case 3:
-      return 'bg-gradient-to-r from-amber-600/20 to-orange-500/10 border-amber-600/30';
-    default:
-      return 'bg-card hover:bg-muted/50';
+  if (rank === 2) {
+    return (
+      <span className="flex items-center justify-center gap-1 text-xs font-black text-slate-400">
+        <Medal className="w-3.5 h-3.5 fill-slate-300 text-slate-400" />
+        #2
+      </span>
+    );
   }
+  if (rank === 3) {
+    return (
+      <span className="flex items-center justify-center gap-1 text-xs font-black text-amber-700">
+        <Medal className="w-3.5 h-3.5 fill-amber-600 text-amber-700" />
+        #3
+      </span>
+    );
+  }
+  return <span className="text-xs font-bold text-muted-foreground">#{rank}</span>;
 };
 
 interface LeaderboardRowProps {
@@ -42,53 +46,90 @@ interface LeaderboardRowProps {
 
 const LeaderboardRow = ({ entry, type, isCurrentUser, index }: LeaderboardRowProps) => {
   const rank = entry.rank || index + 1;
+  const isPro = entry.subscription_plan === 'pro' || entry.subscription_plan === 'premium';
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.03 }}
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.02 }}
       className={cn(
-        'flex items-center gap-3 p-3 rounded-xl border transition-all',
-        getRankBg(rank),
-        isCurrentUser && 'ring-2 ring-primary'
+        "flex items-center gap-3 p-2.5 rounded-xl border transition-all duration-200 select-none",
+        rank === 1 ? "bg-amber-500/5 border-amber-500/20" :
+        rank === 2 ? "bg-slate-400/5 border-slate-300/30 dark:border-slate-700/50" :
+        rank === 3 ? "bg-orange-500/5 border-orange-500/20" :
+        "bg-card hover:bg-muted/40 border-border/80",
+        isCurrentUser && "ring-2 ring-primary border-primary/40 shadow-xs"
       )}
     >
-      <div className="w-8 flex items-center justify-center">
-        {getRankIcon(rank)}
+      {/* Rank Indicator (#1, #2, #3...) */}
+      <div className="w-9 shrink-0 text-center flex items-center justify-center">
+        {getRankBadge(rank)}
       </div>
 
-      <Avatar className="h-10 w-10 border-2 border-background">
-        <AvatarImage src={entry.avatar_url || undefined} />
-        <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-          {entry.display_name?.charAt(0) || '?'}
+      {/* Avatar using same supplier (Google/uploaded avatar or initial fallback) */}
+      <Avatar className="h-8 w-8 shrink-0 border border-border/60">
+        <AvatarImage 
+          src={entry.avatar_url || undefined} 
+          alt={entry.display_name || 'Student'} 
+          className="object-cover"
+        />
+        <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+          {(entry.display_name || '?').charAt(0).toUpperCase()}
         </AvatarFallback>
       </Avatar>
 
+      {/* Student Details: Name, (You), Level, Streak, Subscription Plan */}
       <div className="flex-1 min-w-0">
-        <p className={cn(
-          'font-medium truncate',
-          isCurrentUser && 'text-primary'
-        )}>
-          {entry.display_name || 'Anonymous'}
-          {isCurrentUser && <span className="text-xs ml-1">(You)</span>}
-        </p>
-        <p className="text-xs text-muted-foreground">
-          Level {entry.level}
-        </p>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <p className={cn(
+            "text-sm font-medium truncate max-w-[160px]",
+            isCurrentUser && "font-bold text-primary"
+          )}>
+            {entry.display_name || "Unknown"}
+          </p>
+          {isCurrentUser && (
+            <span className="text-[10px] font-bold text-primary bg-primary/15 px-1.5 py-0.2 rounded-full">
+              (You)
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5 flex-wrap">
+          <span>Lv.{entry.level || 1}</span>
+          <span className="flex items-center gap-0.5">
+            <Flame className="w-3 h-3 text-orange-500 fill-orange-500 inline" />
+            {entry.streak_days || 0}d streak
+          </span>
+          <Badge
+            variant={isPro ? "default" : "secondary"}
+            className={cn(
+              "text-[10px] px-1.5 py-0 h-4 capitalize font-semibold",
+              isPro && "bg-teal-600 text-white hover:bg-teal-600"
+            )}
+          >
+            {entry.subscription_plan || "free"}
+          </Badge>
+          {entry.school && (
+            <span className="truncate max-w-[120px] hidden sm:inline opacity-80">
+              · {entry.school}
+            </span>
+          )}
+        </div>
       </div>
 
-      <div className="flex items-center gap-1.5 font-bold">
+      {/* Real XP / Metric Display */}
+      <div className="flex items-center gap-1 text-sm font-semibold shrink-0">
         {type === 'xp' ? (
-          <>
-            <Star className="w-4 h-4 text-primary" />
-            <span>{entry.xp_points.toLocaleString()}</span>
-          </>
+          <span className="flex items-center gap-1 text-primary">
+            <Star className="h-3.5 w-3.5 fill-primary text-primary" />
+            <span>{(entry.xp_points || 0).toLocaleString()}</span>
+          </span>
         ) : (
-          <>
-            <Flame className="w-4 h-4 text-orange-500" />
-            <span>{entry.streak_days}</span>
-          </>
+          <span className="flex items-center gap-1 text-orange-500">
+            <Flame className="h-3.5 w-3.5 fill-orange-500 text-orange-500" />
+            <span>{entry.streak_days || 0}d</span>
+          </span>
         )}
       </div>
     </motion.div>
@@ -99,7 +140,7 @@ interface LeaderboardProps {
   limit?: number;
 }
 
-export const Leaderboard = ({ limit = 20 }: LeaderboardProps) => {
+export const Leaderboard: React.FC<LeaderboardProps> = ({ limit = 20 }) => {
   const { 
     xpLeaderboard, 
     streakLeaderboard, 
@@ -118,7 +159,7 @@ export const Leaderboard = ({ limit = 20 }: LeaderboardProps) => {
         <CardContent>
           <div className="space-y-3">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-16 bg-muted rounded-xl" />
+              <div key={i} className="h-14 bg-muted rounded-xl" />
             ))}
           </div>
         </CardContent>
@@ -141,7 +182,7 @@ export const Leaderboard = ({ limit = 20 }: LeaderboardProps) => {
               <Star className="w-4 h-4" />
               Top XP
               {currentUserXpRank && (
-                <span className="text-xs bg-primary/20 px-1.5 py-0.5 rounded-full">
+                <span className="text-xs bg-primary/20 px-1.5 py-0.5 rounded-full font-bold">
                   #{currentUserXpRank}
                 </span>
               )}
@@ -150,7 +191,7 @@ export const Leaderboard = ({ limit = 20 }: LeaderboardProps) => {
               <Flame className="w-4 h-4" />
               Top Streaks
               {currentUserStreakRank && (
-                <span className="text-xs bg-orange-500/20 px-1.5 py-0.5 rounded-full">
+                <span className="text-xs bg-orange-500/20 px-1.5 py-0.5 rounded-full font-bold">
                   #{currentUserStreakRank}
                 </span>
               )}
@@ -161,8 +202,8 @@ export const Leaderboard = ({ limit = 20 }: LeaderboardProps) => {
             <ScrollArea className="h-[400px] pr-4">
               <div className="space-y-2">
                 {xpLeaderboard.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    No students yet. Be the first!
+                  <p className="text-center text-muted-foreground py-8 text-sm">
+                    No students yet. Start learning to take #1!
                   </p>
                 ) : (
                   xpLeaderboard.map((entry, index) => (
@@ -183,8 +224,8 @@ export const Leaderboard = ({ limit = 20 }: LeaderboardProps) => {
             <ScrollArea className="h-[400px] pr-4">
               <div className="space-y-2">
                 {streakLeaderboard.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    No streaks yet. Start learning!
+                  <p className="text-center text-muted-foreground py-8 text-sm">
+                    No streaks yet. Start daily practice!
                   </p>
                 ) : (
                   streakLeaderboard.map((entry, index) => (

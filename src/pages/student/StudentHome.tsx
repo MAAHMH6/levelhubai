@@ -591,12 +591,10 @@ export const StudentHome: React.FC = () => {
                           </div>
 
                           {/* Avatar with fallback color */}
-                          <Avatar className="w-8 h-8 shrink-0 border border-black/5 dark:border-white/10">
-                            {entry.avatar_url ? (
-                              <AvatarImage src={entry.avatar_url} alt={entry.display_name} className="object-cover" />
-                            ) : null}
-                            <AvatarFallback className={cn("text-xs font-bold", entry.avatar_color || "bg-teal-600 text-white")}>
-                              {entry.avatar_fallback || entry.display_name?.charAt(0)?.toUpperCase() || 'S'}
+                          <Avatar className="w-8 h-8 shrink-0 border border-slate-200 dark:border-slate-700">
+                            <AvatarImage src={entry.avatar_url || undefined} alt={entry.display_name} className="object-cover" />
+                            <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
+                              {(entry.display_name || '?').charAt(0).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
 
@@ -617,9 +615,22 @@ export const StudentHome: React.FC = () => {
                                 </span>
                               ) : null}
                             </div>
-                            <div className="text-[10px] text-slate-400 truncate">
-                              Level {entry.level || 1}
-                              {entry.school ? ` · ${entry.school}` : ''}
+                            <div className="flex items-center gap-1.5 text-[10px] text-slate-400 truncate mt-0.5">
+                              <span>Lv.{entry.level || 1}</span>
+                              <span>·</span>
+                              <span className="flex items-center gap-0.5 text-orange-500 font-semibold">
+                                <Flame className="w-2.5 h-2.5 fill-orange-500 inline" />
+                                {entry.streak_days || 0}d
+                              </span>
+                              <Badge
+                                variant={entry.subscription_plan === 'pro' || entry.subscription_plan === 'premium' ? 'default' : 'secondary'}
+                                className={cn(
+                                  "text-[9px] px-1 py-0 h-3.5 capitalize font-semibold leading-none",
+                                  (entry.subscription_plan === 'pro' || entry.subscription_plan === 'premium') && "bg-teal-600 text-white hover:bg-teal-600"
+                                )}
+                              >
+                                {entry.subscription_plan || 'free'}
+                              </Badge>
                             </div>
                           </div>
                         </div>
