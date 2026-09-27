@@ -288,6 +288,8 @@ export const Navbar = () => {
 
             {/* Desktop Right CTA */}
             <div className="hidden lg:flex items-center gap-3">
+              <ThemeToggle />
+
               <Button
                 variant="outline"
                 size="sm"
@@ -298,12 +300,30 @@ export const Navbar = () => {
                 WhatsApp
               </Button>
 
-              <Link to="/dashboard">
-                <Button variant="hero" size="sm" className="gap-1.5 font-bold text-xs h-9 px-4">
-                  {user ? "Dashboard" : "Student Dashboard"}
-                  <Sparkles className="w-3.5 h-3.5" />
-                </Button>
-              </Link>
+              {location.pathname !== "/auth" && !loading && (
+                user ? (
+                  <Link to="/dashboard">
+                    <Button variant="hero" size="sm" className="gap-1.5 font-bold text-xs h-9 px-4">
+                      <span>Dashboard</span>
+                      <Sparkles className="w-3.5 h-3.5" />
+                    </Button>
+                  </Link>
+                ) : (
+                  <>
+                    <Link to="/auth?tab=signin">
+                      <Button variant="ghost" size="sm" className="text-xs font-semibold h-9 px-3">
+                        Log In
+                      </Button>
+                    </Link>
+                    <Link to="/auth?tab=signup">
+                      <Button variant="hero" size="sm" className="gap-1.5 font-bold text-xs h-9 px-4">
+                        <span>Get Started</span>
+                        <Sparkles className="w-3.5 h-3.5" />
+                      </Button>
+                    </Link>
+                  </>
+                )
+              )}
             </div>
 
             {/* Mobile Menu Toggle */}
@@ -320,7 +340,7 @@ export const Navbar = () => {
           {isOpen && (
             <div className="lg:hidden border-t border-border/50 py-4 mt-2 animate-in slide-in-from-top-2">
               <div className="flex flex-col gap-2">
-                {NAV_LINKS.map((link) => (
+                {navLinks.map((link) => (
                   <Link
                     key={link.name}
                     to={link.href}
@@ -359,6 +379,11 @@ export const Navbar = () => {
                 </div>
 
                 <div className="flex flex-col gap-2 pt-3 border-t border-border/50">
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-xs font-medium text-muted-foreground">Theme</span>
+                    <ThemeToggle />
+                  </div>
+
                   <Button
                     variant="outline"
                     size="sm"
@@ -372,16 +397,39 @@ export const Navbar = () => {
                     Chat on WhatsApp
                   </Button>
 
-                  <Link
-                    to={user ? "/dashboard" : "/auth"}
-                    onClick={() => setIsOpen(false)}
-                    className="w-full"
-                  >
-                    <Button variant="hero" size="sm" className="w-full justify-center">
-                      {user ? "Go to Dashboard" : "Sign In / Dashboard"}
-                      <Sparkles className="w-3.5 h-3.5 ml-1.5" />
-                    </Button>
-                  </Link>
+                  {location.pathname !== "/auth" && !loading && (
+                    user ? (
+                      <Link
+                        to="/dashboard"
+                        onClick={() => setIsOpen(false)}
+                        className="w-full"
+                      >
+                        <Button variant="hero" size="sm" className="w-full justify-center">
+                          <span>Go to Dashboard</span>
+                          <Sparkles className="w-3.5 h-3.5 ml-1.5" />
+                        </Button>
+                      </Link>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2 w-full">
+                        <Link
+                          to="/auth?tab=signin"
+                          onClick={() => setIsOpen(false)}
+                        >
+                          <Button variant="outline" size="sm" className="w-full justify-center text-xs font-bold">
+                            Log In
+                          </Button>
+                        </Link>
+                        <Link
+                          to="/auth?tab=signup"
+                          onClick={() => setIsOpen(false)}
+                        >
+                          <Button variant="hero" size="sm" className="w-full justify-center text-xs font-bold">
+                            Get Started
+                          </Button>
+                        </Link>
+                      </div>
+                    )
+                  )}
                 </div>
               </div>
             </div>

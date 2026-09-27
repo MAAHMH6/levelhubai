@@ -10,6 +10,7 @@ import {
   BookOpen
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface HeroV2Props {
   onOpenWhatsApp?: () => void;
@@ -31,6 +32,7 @@ export const HeroV2: React.FC<HeroV2Props> = ({
   onOpenWhatsApp,
   onOpenTools,
 }) => {
+  const { user } = useAuth();
   // Typewriter text animation state
   const [featureIndex, setFeatureIndex] = useState(0);
   const [displayedText, setDisplayedText] = useState("");
@@ -184,7 +186,7 @@ export const HeroV2: React.FC<HeroV2Props> = ({
             <div className="absolute -inset-6 bg-gradient-to-tr from-teal-500/30 via-indigo-500/25 to-purple-500/30 rounded-3xl blur-3xl opacity-80 pointer-events-none" />
 
             {/* Browser Window Frame with LevelHubAI Dashboard */}
-            <Link to="/dashboard" className="relative w-full rounded-2xl sm:rounded-3xl border-2 border-border/80 bg-card shadow-2xl overflow-hidden group transition-all duration-300 hover:shadow-teal-500/10 block cursor-pointer">
+            <Link to={user ? "/dashboard" : "/auth?tab=signup"} className="relative w-full rounded-2xl sm:rounded-3xl border-2 border-border/80 bg-card shadow-2xl overflow-hidden group transition-all duration-300 hover:shadow-teal-500/10 block cursor-pointer">
               
               {/* Window Chrome Header Bar */}
               <div className="px-5 py-3.5 bg-muted/80 border-b border-border/80 flex items-center justify-between text-xs">

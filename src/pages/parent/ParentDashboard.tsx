@@ -26,7 +26,7 @@ const ParentDashboard = () => {
     }
   }, [user, authLoading, navigate]);
 
-  if (authLoading) return null;
+  if (authLoading || !user) return null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 pb-20">

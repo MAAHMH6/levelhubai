@@ -326,7 +326,7 @@ export const NavbarV2: React.FC<NavbarV2Props> = ({
               <span>WhatsApp</span>
             </Button>
 
-            {!loading && (
+            {location.pathname !== "/auth" && !loading && (
               user ? (
                 <Link to="/dashboard">
                   <Button variant="hero" size="sm" className="h-9 px-4 text-xs font-bold gap-1.5">
@@ -418,7 +418,7 @@ export const NavbarV2: React.FC<NavbarV2Props> = ({
                   Chat on WhatsApp
                 </Button>
 
-                {!loading && (
+                {location.pathname !== "/auth" && !loading && (
                   user ? (
                     <Link
                       to="/dashboard"

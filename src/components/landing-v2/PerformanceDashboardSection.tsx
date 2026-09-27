@@ -3,8 +3,10 @@ import { BarChart2, Clock, Zap, TrendingUp, Award, CheckCircle2, ArrowRight } fr
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const PerformanceDashboardSection: React.FC = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'score' | 'speed'>('score');
 
   return (
@@ -161,7 +163,9 @@ export const PerformanceDashboardSection: React.FC = () => {
 
         <div className="text-center mt-10">
           <Button asChild size="lg" className="bg-teal-600 hover:bg-teal-700 text-white font-extrabold rounded-2xl text-xs sm:text-sm px-8 shadow-sm">
-            <Link to="/performance">Explore Your Performance Dashboard Free →</Link>
+            <Link to={user ? "/performance" : "/auth?tab=signup"}>
+              {user ? "Go to Performance Dashboard →" : "Sign Up Free to View Performance Dashboard →"}
+            </Link>
           </Button>
         </div>
       </div>

@@ -244,7 +244,7 @@ export const PublicResourceSeoPage: React.FC = () => {
                   size="lg"
                   className="bg-teal-500 hover:bg-teal-400 text-slate-950 font-black text-sm px-8 h-12 rounded-2xl shadow-lg gap-2 group"
                 >
-                  <span>Launch in Student Dashboard</span>
+                  <span>{user ? "Launch in Command Center" : "Get Started Free"}</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Button>
 
@@ -321,7 +321,7 @@ export const PublicResourceSeoPage: React.FC = () => {
                 size="lg"
                 className="bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm px-8 h-11 rounded-xl shadow-md"
               >
-                Open in Student Dashboard
+                {user ? "Open in Command Center" : "Get Started Free"}
               </Button>
             </div>
           </div>

@@ -200,7 +200,7 @@ export default function TeacherDashboard() {
     nav("/");
   };
 
-  if (loading || authLoading) {
+  if (loading || authLoading || !user) {
     return <div className="p-8 text-center">Loading dashboard...</div>;
   }
 
