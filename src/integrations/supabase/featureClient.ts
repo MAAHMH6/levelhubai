@@ -1,19 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { supabase as mainSupabase } from './client';
 
-// New Feature Database Credentials
-const NEW_SUPABASE_URL = import.meta.env.VITE_NEW_SUPABASE_URL || 'https://jqscjbaondlknhrcbkuh.supabase.co';
-const NEW_SUPABASE_KEY = import.meta.env.VITE_NEW_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impxc2NqYmFvbmRsa25ocmNia3VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk2NTA1NjUsImV4cCI6MjEwNTIyNjU2NX0.LlTAztbdMYXIFolwpYZLHHkHHl85eRqOeRkNLqQEebk';
-
-export const featureSupabase = (NEW_SUPABASE_URL && NEW_SUPABASE_KEY)
-  ? createClient(NEW_SUPABASE_URL, NEW_SUPABASE_KEY, {
-      auth: {
-        storage: localStorage,
-        persistSession: true,
-        autoRefreshToken: true,
-      },
-    })
-  : mainSupabase;
+// Unified Supabase client for all features (Points directly to main father's database)
+export const featureSupabase = mainSupabase;
 
 // TYPES FOR NEW FEATURES
 export interface StudyPlanItem {
@@ -77,7 +66,7 @@ export interface DailyUsageLimit {
   date: string;
 }
 
-// STORAGE HELPERS WITH LOCAL FALLBACK
+// STORAGE HELPERS WITH ZERO-MIGRATION DEFENSIVE LOCAL FALLBACK
 const LOCAL_STORAGE_KEYS = {
   PLANS: 'levelhub_feature_plans',
   MISTAKES: 'levelhub_feature_mistakes',
@@ -90,24 +79,22 @@ export const featureStorage = {
   // Study Plans
   async getStudyPlans(userId: string, programme?: string): Promise<StudyPlanItem[]> {
     try {
-      let { data, error } = await (mainSupabase as any)
+      const { data, error } = await (mainSupabase as any)
         .from('study_plans')
         .select('*')
         .eq('user_id', userId);
       if (!error && data && data.length > 0) return data;
-
-      const res = await featureSupabase
-        .from('study_plans')
-        .select('*')
-        .eq('user_id', userId);
-      if (!res.error && res.data && res.data.length > 0) return res.data;
     } catch {
-      // Fall through to local fallback
+      // Safe fallback if table not yet migrated
     }
     const raw = localStorage.getItem(LOCAL_STORAGE_KEYS.PLANS);
     if (!raw) return [];
-    const all: StudyPlanItem[] = JSON.parse(raw);
-    return all.filter(p => p.user_id === userId && (!programme || p.programme === programme));
+    try {
+      const all: StudyPlanItem[] = JSON.parse(raw);
+      return all.filter(p => p.user_id === userId && (!programme || p.programme === programme));
+    } catch {
+      return [];
+    }
   },
 
   async saveStudyPlan(item: Omit<StudyPlanItem, 'id' | 'created_at'>): Promise<StudyPlanItem> {
@@ -118,14 +105,15 @@ export const featureStorage = {
     };
     try {
       await (mainSupabase as any).from('study_plans').insert(newItem);
-    } catch {}
+    } catch {
+      // Safe catch
+    }
     try {
-      await featureSupabase.from('study_plans').insert(newItem);
+      const raw = localStorage.getItem(LOCAL_STORAGE_KEYS.PLANS);
+      const all: StudyPlanItem[] = raw ? JSON.parse(raw) : [];
+      all.push(newItem);
+      localStorage.setItem(LOCAL_STORAGE_KEYS.PLANS, JSON.stringify(all));
     } catch {}
-    const raw = localStorage.getItem(LOCAL_STORAGE_KEYS.PLANS);
-    const all: StudyPlanItem[] = raw ? JSON.parse(raw) : [];
-    all.push(newItem);
-    localStorage.setItem(LOCAL_STORAGE_KEYS.PLANS, JSON.stringify(all));
     return newItem;
   },
 
@@ -133,21 +121,20 @@ export const featureStorage = {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEYS.PLANS);
     let isCompleted = true;
     if (raw) {
-      const all: StudyPlanItem[] = JSON.parse(raw);
-      const updated = all.map(p => {
-        if (p.id === id) {
-          isCompleted = !p.completed;
-          return { ...p, completed: isCompleted };
-        }
-        return p;
-      });
-      localStorage.setItem(LOCAL_STORAGE_KEYS.PLANS, JSON.stringify(updated));
+      try {
+        const all: StudyPlanItem[] = JSON.parse(raw);
+        const updated = all.map(p => {
+          if (p.id === id) {
+            isCompleted = !p.completed;
+            return { ...p, completed: isCompleted };
+          }
+          return p;
+        });
+        localStorage.setItem(LOCAL_STORAGE_KEYS.PLANS, JSON.stringify(updated));
+      } catch {}
     }
     try {
       await (mainSupabase as any).from('study_plans').update({ completed: isCompleted }).eq('id', id);
-    } catch {}
-    try {
-      await featureSupabase.from('study_plans').update({ completed: isCompleted }).eq('id', id);
     } catch {}
   },
 
@@ -158,18 +145,17 @@ export const featureStorage = {
       if (subjectId) query = query.eq('subject_id', subjectId);
       const { data, error } = await query;
       if (!error && data && data.length > 0) return data;
-
-      let fQuery = featureSupabase.from('student_mistakes').select('*').eq('user_id', userId);
-      if (subjectId) fQuery = fQuery.eq('subject_id', subjectId);
-      const fRes = await fQuery;
-      if (!fRes.error && fRes.data && fRes.data.length > 0) return fRes.data;
     } catch {
-      // Fall through to local fallback
+      // Safe fallback if table not yet migrated
     }
     const raw = localStorage.getItem(LOCAL_STORAGE_KEYS.MISTAKES);
     if (!raw) return [];
-    const all: StudentMistake[] = JSON.parse(raw);
-    return all.filter(m => m.user_id === userId && (!subjectId || m.subject_id === subjectId));
+    try {
+      const all: StudentMistake[] = JSON.parse(raw);
+      return all.filter(m => m.user_id === userId && (!subjectId || m.subject_id === subjectId));
+    } catch {
+      return [];
+    }
   },
 
   async addMistake(item: Omit<StudentMistake, 'id' | 'created_at'>): Promise<StudentMistake> {
@@ -182,27 +168,25 @@ export const featureStorage = {
       await (mainSupabase as any).from('student_mistakes').insert(newMistake);
     } catch {}
     try {
-      await featureSupabase.from('student_mistakes').insert(newMistake);
+      const raw = localStorage.getItem(LOCAL_STORAGE_KEYS.MISTAKES);
+      const all: StudentMistake[] = raw ? JSON.parse(raw) : [];
+      all.unshift(newMistake);
+      localStorage.setItem(LOCAL_STORAGE_KEYS.MISTAKES, JSON.stringify(all));
     } catch {}
-    const raw = localStorage.getItem(LOCAL_STORAGE_KEYS.MISTAKES);
-    const all: StudentMistake[] = raw ? JSON.parse(raw) : [];
-    all.unshift(newMistake);
-    localStorage.setItem(LOCAL_STORAGE_KEYS.MISTAKES, JSON.stringify(all));
     return newMistake;
   },
 
   async resolveMistake(id: string): Promise<void> {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEYS.MISTAKES);
     if (raw) {
-      const all: StudentMistake[] = JSON.parse(raw);
-      const updated = all.map(m => m.id === id ? { ...m, resolved: true } : m);
-      localStorage.setItem(LOCAL_STORAGE_KEYS.MISTAKES, JSON.stringify(updated));
+      try {
+        const all: StudentMistake[] = JSON.parse(raw);
+        const updated = all.map(m => m.id === id ? { ...m, resolved: true } : m);
+        localStorage.setItem(LOCAL_STORAGE_KEYS.MISTAKES, JSON.stringify(updated));
+      } catch {}
     }
     try {
       await (mainSupabase as any).from('student_mistakes').update({ resolved: true }).eq('id', id);
-    } catch {}
-    try {
-      await featureSupabase.from('student_mistakes').update({ resolved: true }).eq('id', id);
     } catch {}
   },
 
@@ -216,21 +200,17 @@ export const featureStorage = {
         .eq('subject_id', subjectId)
         .maybeSingle();
       if (!error && data) return data;
-
-      const fRes = await featureSupabase
-        .from('subject_ai_contexts')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('subject_id', subjectId)
-        .maybeSingle();
-      if (!fRes.error && fRes.data) return fRes.data;
     } catch {
       // Fallback
     }
     const raw = localStorage.getItem(LOCAL_STORAGE_KEYS.AI_CONTEXTS);
     if (!raw) return null;
-    const all: Record<string, SubjectAIContext> = JSON.parse(raw);
-    return all[`${userId}_${subjectId}`] || null;
+    try {
+      const all: Record<string, SubjectAIContext> = JSON.parse(raw);
+      return all[`${userId}_${subjectId}`] || null;
+    } catch {
+      return null;
+    }
   },
 
   async updateSubjectAIContext(context: SubjectAIContext): Promise<void> {
@@ -238,12 +218,11 @@ export const featureStorage = {
       await (mainSupabase as any).from('subject_ai_contexts').upsert(context, { onConflict: 'user_id,subject_id' });
     } catch {}
     try {
-      await featureSupabase.from('subject_ai_contexts').upsert(context, { onConflict: 'user_id,subject_id' });
+      const raw = localStorage.getItem(LOCAL_STORAGE_KEYS.AI_CONTEXTS);
+      const all: Record<string, SubjectAIContext> = raw ? JSON.parse(raw) : {};
+      all[`${context.user_id}_${context.subject_id}`] = context;
+      localStorage.setItem(LOCAL_STORAGE_KEYS.AI_CONTEXTS, JSON.stringify(all));
     } catch {}
-    const raw = localStorage.getItem(LOCAL_STORAGE_KEYS.AI_CONTEXTS);
-    const all: Record<string, SubjectAIContext> = raw ? JSON.parse(raw) : {};
-    all[`${context.user_id}_${context.subject_id}`] = context;
-    localStorage.setItem(LOCAL_STORAGE_KEYS.AI_CONTEXTS, JSON.stringify(all));
   },
 
   // Daily Usage Limits
